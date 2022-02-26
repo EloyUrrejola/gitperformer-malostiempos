@@ -1,0 +1,22 @@
+var status ("Status") : Parameter "Off","On" = "Off"
+var off_time ("Off time") : Parameter 0..20 = 5
+var start_time: double = 0.0
+
+Initialization
+    SetTimersRunning(true);
+End
+
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 25
+    Print("eo")
+    if status == "Off" then
+        status = "On"
+        start_time = TimeSinceStartup()
+    end
+end
+
+on TimerTick(ms : double)
+    if status == "On" and TimeSinceStartup() > start_time + off_time * 100 then
+        status = "Off"
+    end
+end
+

@@ -26,7 +26,7 @@ var guitar_pitch_array: PluginBlock array = [GuitarPitch1, GuitarPitch2]
 var octave_pitch_select, guitar_pitch_select_1, guitar_pitch_select_2: widget
 var guitar_pitch_select_array: widget array = [guitar_pitch_select_1, guitar_pitch_select_2]
 
-var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amount, octave_reverb_length, octave_chorus: widget
+var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amount, octave_reverb_length: widget
 
 var select_bass, bass_name: widget
 var bass_name_array: string array = ["Warwick", "Status"]
@@ -93,8 +93,8 @@ var chord_name_array: widget array = [chord_name_1, chord_name_2, chord_name_3, 
 var chords_letter_1, chords_letter_2, chords_letter_3, chords_letter_4: widget
 var chords_letter_array : widget array = [chords_letter_1, chords_letter_2, chords_letter_3, chords_letter_4]
 
+var special_button_1, special_button_2: widget
 var special_label_1, special_label_2: widget
-var special_button_2: widget
 
 var chord_names: string array = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 var number_of_tracks : Integer
@@ -116,6 +116,9 @@ var bass_reverb_saved: Boolean = false
 var preset_label_array: String array = ["1", "2"]
 var filter_off_value: double = 0.6
 var filter_on_value: double = 0.0
+
+var start_time: double
+var delayed_widgets: widget array
 
 function setChordLetterValues(number_of_tracks: integer)
     var x: integer
@@ -141,7 +144,7 @@ function loadMidiFile()
     number_of_tracks = 0
     song_name = GetVariationName(GetCurrentVariation())
     midi_file_name = directory + ReplaceString(song_name, " ", "_", false) + ".mid"
-    if FileExists(midi_file_name) Then
+    if FileExists(midi_file_name) then
         number_of_tracks = MidiSequence_LoadMidiFile(midi_sequence, midi_file_name)
     end
     setChordLetterValues(number_of_tracks)
@@ -156,12 +159,16 @@ Initialization
     SetVariation(0)
 end
 
+function setTrackButtonOff(button_widget: widget, chord_name_widget: widget)
+    SetWidgetValue(button_widget, 0)
+    SetWidgetLabel(chord_name_widget, "")
+end
+
 function setTrackButtonsOff()
     var x: integer
     
     for x=0; x<4; x=x+1 do
-        SetWidgetValue(button_letter_array[x], 0)
-        SetWidgetLabel(chord_name_array[x], "")
+        setTrackButtonOff(button_letter_array[x], chord_name_array[x])
     end
     current_chord_number = 0
 end
@@ -170,17 +177,6 @@ function fullResetSequence()
     setTrackButtonsOff()
     MidiSequence_ResetToStart(midi_sequence)
     AllNotesOff(TSMIDI_DCHA)
-end
-
-function ResetSequence() Autotype
-    var index : Integer
-
-    setTrackButtonsOff()
-    MidiSequence_ResetToStart(midi_sequence)
-    For index = 0; index < Size(last_chord); index = index + 1 do
-        TSMIDI_DCHA.SendNow(ReinterpretAsNoteOffMessage(last_chord[index]))
-    end
-    last_chord = []
 end
 
 function stopPlayer()
@@ -295,10 +291,7 @@ function getChordName(chord: MidiMessage array) returns string
     var third: string = getThird(chord, keynote_number)
     var fifth: string = getFifth(chord, keynote_number)
     var seventh: string = getSeventh(chord, keynote_number)
-    var type_text: string = ""
-    //Print("third: " + third)
-    //Print("fifth: " + fifth)
-    //Print("seventh: " + seventh)
+    var type_text, chord_name: string = ""
     if third == "minor" then
         type_text = "m"
         if fifth == "dim" then
@@ -342,7 +335,9 @@ function getChordName(chord: MidiMessage array) returns string
             end
         end
     end
-    result = chord_names[keynote_number] + type_text
+    chord_name = chord_names[keynote_number] + type_text
+    Print(chord_name)
+    result = chord_name
 end
 // ==============================================
 
@@ -359,27 +354,24 @@ function playChord(track_number : Integer)
     hasAnyNoteOn = false
     For index = 0; index < Size(chord); index = index + 1 do
         note = chord[index]
-        if IsNote(note) Then
-            Print(note)
+        if IsNote(note) then
             TSMIDI_DCHA.SendNow(note)
-            if IsNoteOn(note) Then
+            if IsNoteOn(note) then
                 hasAnyNoteOn = true
                 last_chord <-- note
             end
         end
     end
     
-    Print("")
-    if (hasAnyNoteOn) Then
+    if (hasAnyNoteOn) then
         if Size(last_chord) >= 3 then
             SetWidgetLabel(chord_name_array[track_number], getChordName(last_chord))
         else
             SetWidgetLabel(chord_name_array[track_number], current_chord_number)
         end
-        SetWidgetValue(button_letter_array[track_number], 1)
     else
         MidiSequence_ResetToStart(midi_sequence)
-        if GetWidgetValue(cycle_array[track_number]) == 1 Then
+        if GetWidgetValue(cycle_array[track_number]) == 1 then
             playChord(track_number)
         else
             setTrackButtonsOff()
@@ -387,11 +379,27 @@ function playChord(track_number : Integer)
     end
 end
 
+function stopChord(track_number: integer) Autotype
+    var index : Integer
+
+    if current_variation == last_variation then
+        setTrackButtonOff(button_letter_array[track_number], chord_name_array[track_number])
+    end
+
+    MidiSequence_ResetToStart(midi_sequence)
+    For index = 0; index < Size(last_chord); index = index + 1 do
+        TSMIDI_DCHA.SendNow(ReinterpretAsNoteOffMessage(last_chord[index]))
+    end
+    last_chord = []
+end
+
 function playChordSequence(CC_number : integer)
     track_number = IndexOf(cc_chord, CC_number)
     if track_number < number_of_tracks then
         if track_number != last_track_number Or current_variation != last_variation then
-            ResetSequence()
+            if last_track_number >= 0 then
+                stopChord(last_track_number)
+            end
             last_track_number = track_number
             current_chord_number = 0
         end
@@ -423,7 +431,7 @@ function setGuitarPreset(guitar_preset: integer)
     SetPluginBypassed(guitar_pitch_array[1], pitch_select == 0)
     
     SetParameter(GuitarGain, 0, GetWidgetValue(guitar_volume_array[guitar_preset]))
-    if GetWidgetValue(guitar_amp_button_array[guitar_preset]) == 1 Then
+    if GetWidgetValue(guitar_amp_button_array[guitar_preset]) == 1 then
         SetPluginBypassed(GuitarAmp, false)
         sendGuitarAmpPreset(GetWidgetValue(guitar_amp_preset_array[guitar_preset]))
         //SetPluginEditorXYPosition(GuitarAmp, 0, 380)
@@ -432,7 +440,7 @@ function setGuitarPreset(guitar_preset: integer)
         //ClosePlugin(GuitarAmp)
     end
     
-    /*if GetWidgetValue(guitar_chorus_button_array[guitar_preset]) == 1 Then
+    /*if GetWidgetValue(guitar_chorus_button_array[guitar_preset]) == 1 then
         SetPluginBypassed(GuitarChorus, false)
         SetParameter(GuitarChorus, 4, GetWidgetValue(guitar_chorus_delay_array[guitar_preset]))
         SetParameter(GuitarChorus, 5, GetWidgetValue(guitar_chorus_depth_array[guitar_preset]))
@@ -441,7 +449,7 @@ function setGuitarPreset(guitar_preset: integer)
         SetPluginBypassed(GuitarChorus, true)
     end*/
     
-    if GetWidgetValue(guitar_delay_button_array[guitar_preset]) == 1 Then
+    if GetWidgetValue(guitar_delay_button_array[guitar_preset]) == 1 then
         SetPluginBypassed(GuitarDelay, false)
         SetParameter(GuitarDelay, 1, GetWidgetValue(guitar_delay_time_array[guitar_preset]))
         SetParameter(GuitarDelay, 6, GetWidgetValue(guitar_delay_feedback_array[guitar_preset]))
@@ -450,7 +458,7 @@ function setGuitarPreset(guitar_preset: integer)
          SetPluginBypassed(GuitarDelay, true)
     end
     
-    if GetWidgetValue(guitar_reverb_button_array[guitar_preset]) == 1 Then
+    if GetWidgetValue(guitar_reverb_button_array[guitar_preset]) == 1 then
         SetPluginBypassed(GuitarReverb, false)
         SetParameter(GuitarReverb, 3, GetWidgetValue(guitar_reverb_amount_array[guitar_preset]))
         SetParameter(GuitarReverb, 1, GetWidgetValue(guitar_reverb_length_array[guitar_preset]))
@@ -458,7 +466,7 @@ function setGuitarPreset(guitar_preset: integer)
         SetPluginBypassed(GuitarReverb, true)
     end
     
-    if GetWidgetValue(guitar_midi_button_array[guitar_preset]) == 1 Then
+    if GetWidgetValue(guitar_midi_button_array[guitar_preset]) == 1 then
         SetPluginBypassed(GuitarMidi, false)
         SetParameter(MIDIGuitarChannel, 1, GetWidgetValue(guitar_midi_channel_array[guitar_preset]) * 10 / 16)
     else
@@ -518,8 +526,8 @@ end
 function switchOctaveOn()
     var pitch_select: double = GetWidgetValue(octave_pitch_select)
     
-    if GetWidgetValue(block_bass_reverb) == 0 Then
-        if GetWidgetValue(auto_bass_reverb) == 1 And GetWidgetValue(bass_reverb_button) == 1 Then
+    if GetWidgetValue(block_bass_reverb) == 0 then
+        if GetWidgetValue(auto_bass_reverb) == 1 And GetWidgetValue(bass_reverb_button) == 1 then
             bass_reverb_saved = true
         end
         SetWidgetValue(bass_reverb_button, 0)
@@ -540,7 +548,7 @@ function switchOctaveOff()
     switchGuitarPluginsOff()
     //SetPluginBypassed(guitar_pitch_array[0], true)
     //SetPluginBypassed(guitar_pitch_array[1], true)
-    if bass_reverb_saved Then
+    if bass_reverb_saved then
         SetWidgetValue(bass_reverb_button, 1)
         bass_reverb_saved = false
     end
@@ -572,7 +580,7 @@ function setKnobLabel(w: Widget, label_text:String, track: Integer, led_widget: 
     var is_on: boolean
     
     is_on = false
-    if track > 0 Then
+    if track > 0 then
         label = label_text + " " + track
         if !label_before then
             label = "" + track + " " + label_text
@@ -600,12 +608,19 @@ function checkPlayerTracks()
     SetWidgetValue(button_filter_10, stop_button_value)
 end
 
+function switchDelayedWidgetOff(widget_button: Widget)
+    delayed_widgets[Size(delayed_widgets)] = widget_button
+    start_time = TimeSinceStartup()
+end
+
 function startAllProcesses(new_var: integer)
     var default_preset: string = "1"
     var x: integer
     var tracks: integer array
     var bypassed: boolean
-
+    
+    SetTimersRunning(true);
+    
     current_variation = new_var
     bass_reverb_saved = false
 
@@ -626,7 +641,7 @@ function startAllProcesses(new_var: integer)
     end
     // fin bypass
     
-    if GetWidgetValue(guitar_button) == 1 Then
+    if GetWidgetValue(guitar_button) == 1 then
         setGuitarPreset(StringToInt(default_preset) - 1)
     else
         switchGuitarOff()
@@ -659,7 +674,7 @@ function startAllProcesses(new_var: integer)
 end
 
 function switchButton(widget_button: Widget)
-    if GetWidgetValue(widget_button) == 0 Then
+    if GetWidgetValue(widget_button) == 0 then
         SetWidgetValue(widget_button, 1)
     else
         SetWidgetValue(widget_button, 0)
@@ -668,11 +683,11 @@ end
 
 // ================ EVENTS ================
 
-On Variation (old_var : Int, new_var : Int)
+on Variation (old_var : Int, new_var : Int)
     startAllProcesses(new_var)
 end
 
-On WidgetValueChanged (newValue : Double) from select_bass
+on WidgetValueChanged (newValue : Double) from select_bass
     setBassName()
 end
 
@@ -687,14 +702,14 @@ function startPlayer(player_index: integer)
     end
 end
 
-On WidgetValueChanged (w: Widget, player_index: Integer, newValue : Double) from button_play_1, button_play_2
+on WidgetValueChanged (w: Widget, player_index: Integer, newValue : Double) from button_play_1, button_play_2
     if newValue == 1 then
         //stopPlayer()
         startPlayer(player_index)
     end
 end
 
-On WidgetValueChanged (w: Widget, button_index: Integer, newValue : Double) from reset_button, stop_button
+on WidgetValueChanged (w: Widget, button_index: Integer, newValue : Double) from reset_button, stop_button
     if newValue == 1 then
         if button_index == 0 then
             fullResetSequence()
@@ -705,15 +720,15 @@ On WidgetValueChanged (w: Widget, button_index: Integer, newValue : Double) from
     end
 end
 
-On WidgetValueChanged (newValue : Double) from bass_button
+on WidgetValueChanged (newValue : Double) from bass_button
     if newValue == 0 then
-        if GetWidgetValue(octave_button) == 1 Then
+        if GetWidgetValue(octave_button) == 1 then
             setOctaveOff()
         end
     end
 end
 
-On WidgetValueChanged (newValue : Double) from octave_button
+on WidgetValueChanged (newValue : Double) from octave_button
     if newValue == 1 then
         SetWidgetValue(bass_button, 1)
         setGuitarOff()
@@ -723,7 +738,7 @@ On WidgetValueChanged (newValue : Double) from octave_button
     end
 end
 
-On WidgetValueChanged (newValue : Double) from guitar_button
+on WidgetValueChanged (newValue : Double) from guitar_button
     if newValue == 1 then
         SetWidgetValue(bass_button, 0)
         setOctaveOff()
@@ -734,35 +749,43 @@ On WidgetValueChanged (newValue : Double) from guitar_button
     end
 end
 
-On ControlChangeEvent (cc : ControlChangeMessage) Matching [20..27] From TSMIDI_DCHA
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
+    if newValue == 1 then
+        playChordSequence(cc_chord[index])
+    end
+end
+
+on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..27] From TSMIDI_DCHA
     var CC_number : Integer
-    var player_index: integer
+    var player_index, chord_player_index: integer
 
     CC_number = GetCCNumber(cc)
-    if IndexOf(cc_reset, CC_number) != -1 Then
+    if IndexOf(cc_reset, CC_number) != -1 then
         SetWidgetValue(reset_button, 1)
-        SetWidgetValue(reset_button, 0)
-    elsif IndexOf(cc_stop, CC_number) != -1 Then
+        switchDelayedWidgetOff(reset_button)
+    elsif IndexOf(cc_stop, CC_number) != -1 then
         SetWidgetValue(stop_button, 1)
-        SetWidgetValue(stop_button, 0)
-    elsif IndexOf(cc_chord, CC_number) != -1 Then
-        playChordSequence(CC_number)
-    elsif IndexOf(cc_play, CC_number) != -1 Then
+        switchDelayedWidgetOff(stop_button)
+    elsif IndexOf(cc_chord, CC_number) != -1 then
+        chord_player_index = IndexOf(cc_chord, CC_number)
+        SetWidgetValue(button_letter_array[chord_player_index], 0)
+        SetWidgetValue(button_letter_array[chord_player_index], 1)
+    elsif IndexOf(cc_play, CC_number) != -1 then
         player_index = IndexOf(cc_play, CC_number)
         SetWidgetValue(button_play_array[player_index], 1)
     end
 end
 
-On WidgetValueChanged (newValue: Double) from guitar_preset_button
-    if newValue == 1 Then
+on WidgetValueChanged (newValue: Double) from guitar_preset_button
+    if newValue == 1 then
         switchGuitarPreset()
-        SetWidgetValue(guitar_preset_button, 0)
+        switchDelayedWidgetOff(guitar_preset_button)
     end
 end
 
-On WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from block_bass_reverb, auto_bass_reverb
-    if newValue == 1 Then
-        if index == 0 Then
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from block_bass_reverb, auto_bass_reverb
+    if newValue == 1 then
+        if index == 0 then
             SetWidgetValue(auto_bass_reverb, 0)
         else
             SetWidgetValue(block_bass_reverb, 0)
@@ -770,19 +793,19 @@ On WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from block_b
     end
 end
 
-On ControlChangeEvent (cc : ControlChangeMessage) Matching [20..22] From TSMIDI_IZDA
+on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..22] From TSMIDI_IZDA
     var CC_number : Integer = GetCCNumber(cc)
 
-    if CC_number == bass_cc Then
+    if CC_number == bass_cc then
         switchButton(bass_button)
-    elsif CC_number == octave_cc Then
+    elsif CC_number == octave_cc then
         switchButton(octave_button)
-    elsif CC_number == guitar_cc Then
+    elsif CC_number == guitar_cc then
         switchButton(guitar_button)
     end
 end
 
-On ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZDA
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZDA
     var CC_number : Integer
     var audio_track : Integer
     var player_index: integer
@@ -791,35 +814,41 @@ On ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
     if current_variation == 14 then
         // especial Electroshock
         if CC_number == 25 then
+            SetWidgetValue(special_button_1, 1)
             fullResetSequence()
             SetWidgetValue(bass_button, 1)
             setGuitarOff()
             setOctaveOn()
+            switchDelayedWidgetOff(special_button_1)
         elsif CC_number == 27 then
+            SetWidgetValue(special_button_2, 1)
             stopPlayer()
             EnablePlayhead(true)
             fullResetSequence()
 
             switchButton(button_play_2);
             startPlayer(1)
+            switchDelayedWidgetOff(special_button_2)
         end
     elsif current_variation == 13 then
         // especial Rita
         if CC_number == 27 then
+            SetWidgetValue(special_button_2, 1)
             fullResetSequence()
             SetWidgetValue(bass_reverb_button, 0)
+            switchDelayedWidgetOff(special_button_2)
         end
     end
 end
 
-On WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, player_length_1, player_length_2, guitar_midi_channel_1, guitar_midi_channel_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, player_length_1, player_length_2, guitar_midi_channel_1, guitar_midi_channel_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2
     var rounded_value : Double
     var new_value: Double
     var steps: integer = knob_widget_range_array[index]
 
     rounded_value = IntToFloat(Round(newValue * steps)) / steps
     new_value = IntToFloat(Round(newValue * 10000000)) / 10000000
-    if new_value != rounded_value Then
+    if new_value != rounded_value then
         SetWidgetValue(w, IntToFloat(Round(new_value * steps)) / steps)
         checkPlayerTracks()
     end
@@ -876,9 +905,22 @@ on BeatChanged(bar : integer, beat : integer)
                 
                 beat_change_at = Round(GetWidgetValue(beat_a_array[x]) * 100)
                 if beat_change_at > 0 and beat_change_at == current_beat then
-                    playChordSequence(cc_chord[0])
+                    //playChordSequence(cc_chord[0])
+                    SetWidgetValue(button_letter_array[0], 0)
+                    SetWidgetValue(button_letter_array[0], 1)
                 end
             end
         end
+    end
+end
+
+on TimerTick(ms : double)
+    var x: integer
+    
+    if TimeSinceStartup() > start_time + 300 then
+        for x=0; x<Size(delayed_widgets); x=x+1 do
+            SetWidgetValue(delayed_widgets[x], 0)
+        end 
+        ClearArray(delayed_widgets)
     end
 end
