@@ -667,6 +667,11 @@ function startAllProcesses(new_var: integer)
         SetWidgetLabel(special_label_2, "stop chords and reverb off")
         SetWidgetValue(button_filter_2, filter_off_value)
         SetWidgetValue(button_filter_4, filter_on_value)
+    elsif current_variation == 19 then
+        SetWidgetLabel(special_label_1, "stop chords octave on")
+        SetWidgetLabel(special_label_2, "")
+        SetWidgetValue(button_filter_2, filter_on_value)
+        SetWidgetValue(button_filter_4, filter_off_value)
     else
         SetWidgetLabel(special_label_1, "")
         SetWidgetLabel(special_label_2, "")
@@ -843,6 +848,16 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
             fullResetSequence()
             SetWidgetValue(bass_reverb_button, 0)
             switchDelayedWidgetOff(special_button_2)
+        end
+    elsif current_variation == 19 then
+        // especial Another way around
+        if CC_number == 25 then
+            SetWidgetValue(special_button_1, 1)
+            fullResetSequence()
+            SetWidgetValue(bass_button, 1)
+            setGuitarOff()
+            setOctaveOn()
+            switchDelayedWidgetOff(special_button_1)
         end
     end
 end
