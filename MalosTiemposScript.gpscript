@@ -119,6 +119,8 @@ var filter_on_value: double = 0.0
 
 var start_time: double
 var delayed_widgets: widget array
+var variation_time: double
+var events_allowed: boolean
 
 function setChordLetterValues(number_of_tracks: integer)
     var x: integer
@@ -665,6 +667,11 @@ function startAllProcesses(new_var: integer)
         SetWidgetLabel(special_label_2, "stop chords and reverb off")
         SetWidgetValue(button_filter_2, filter_off_value)
         SetWidgetValue(button_filter_4, filter_on_value)
+    elsif current_variation == 19 then
+        SetWidgetLabel(special_label_1, "stop chords octave on")
+        SetWidgetLabel(special_label_2, "")
+        SetWidgetValue(button_filter_2, filter_on_value)
+        SetWidgetValue(button_filter_4, filter_off_value)
     else
         SetWidgetLabel(special_label_1, "")
         SetWidgetLabel(special_label_2, "")
@@ -684,6 +691,8 @@ end
 // ================ EVENTS ================
 
 on Variation (old_var : Int, new_var : Int)
+    events_allowed = false
+    variation_time = TimeSinceStartup()
     startAllProcesses(new_var)
 end
 
@@ -739,13 +748,15 @@ on WidgetValueChanged (newValue : Double) from octave_button
 end
 
 on WidgetValueChanged (newValue : Double) from guitar_button
-    if newValue == 1 then
-        SetWidgetValue(bass_button, 0)
-        setOctaveOff()
-        switchGuitarOn()
-    else
-        SetWidgetValue(bass_button, 1)
-        switchGuitarOff()
+    if events_allowed then
+        if newValue == 1 then
+            SetWidgetValue(bass_button, 0)
+            setOctaveOff()
+            switchGuitarOn()
+        else
+            SetWidgetValue(bass_button, 1)
+            switchGuitarOff()
+        end
     end
 end
 
@@ -838,6 +849,16 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
             SetWidgetValue(bass_reverb_button, 0)
             switchDelayedWidgetOff(special_button_2)
         end
+    elsif current_variation == 19 then
+        // especial Another way around
+        if CC_number == 25 then
+            SetWidgetValue(special_button_1, 1)
+            fullResetSequence()
+            SetWidgetValue(bass_button, 1)
+            setGuitarOff()
+            setOctaveOn()
+            switchDelayedWidgetOff(special_button_1)
+        end
     end
 end
 
@@ -916,11 +937,14 @@ end
 
 on TimerTick(ms : double)
     var x: integer
-    
     if TimeSinceStartup() > start_time + 300 then
         for x=0; x<Size(delayed_widgets); x=x+1 do
             SetWidgetValue(delayed_widgets[x], 0)
         end 
         ClearArray(delayed_widgets)
+    end
+
+    if TimeSinceStartup() > variation_time + 500 then
+        events_allowed = true
     end
 end
