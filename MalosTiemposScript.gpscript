@@ -610,9 +610,22 @@ function checkPlayerTracks()
     SetWidgetValue(button_filter_10, stop_button_value)
 end
 
-function switchDelayedWidgetOff(widget_button: Widget)
+function switchDelayedWidgetOn(widget_button: Widget)
+    SetWidgetValue(widget_button, 1)
     delayed_widgets[Size(delayed_widgets)] = widget_button
     start_time = TimeSinceStartup()
+end
+
+function switchButtonOn(widget_button: Widget)
+    SetWidgetValue(widget_button, 1)
+end
+
+function switchButtonOff(widget_button: Widget)
+    SetWidgetValue(widget_button, 0)
+end
+
+function switchButton(widget_button: Widget)
+    SetWidgetValue(widget_button, 1 - GetWidgetValue(widget_button))
 end
 
 function startAllProcesses(new_var: integer)
@@ -677,14 +690,6 @@ function startAllProcesses(new_var: integer)
         SetWidgetLabel(special_label_2, "")
         SetWidgetValue(button_filter_2, filter_off_value)
         SetWidgetValue(button_filter_4, filter_off_value)
-    end
-end
-
-function switchButton(widget_button: Widget)
-    if GetWidgetValue(widget_button) == 0 then
-        SetWidgetValue(widget_button, 1)
-    else
-        SetWidgetValue(widget_button, 0)
     end
 end
 
@@ -766,31 +771,9 @@ on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from button_
     end
 end
 
-on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..27] From TSMIDI_DCHA
-    var CC_number : Integer
-    var player_index, chord_player_index: integer
-
-    CC_number = GetCCNumber(cc)
-    if IndexOf(cc_reset, CC_number) != -1 then
-        SetWidgetValue(reset_button, 1)
-        switchDelayedWidgetOff(reset_button)
-    elsif IndexOf(cc_stop, CC_number) != -1 then
-        SetWidgetValue(stop_button, 1)
-        switchDelayedWidgetOff(stop_button)
-    elsif IndexOf(cc_chord, CC_number) != -1 then
-        chord_player_index = IndexOf(cc_chord, CC_number)
-        SetWidgetValue(button_letter_array[chord_player_index], 0)
-        SetWidgetValue(button_letter_array[chord_player_index], 1)
-    elsif IndexOf(cc_play, CC_number) != -1 then
-        player_index = IndexOf(cc_play, CC_number)
-        SetWidgetValue(button_play_array[player_index], 1)
-    end
-end
-
 on WidgetValueChanged (newValue: Double) from guitar_preset_button
     if newValue == 1 then
         switchGuitarPreset()
-        switchDelayedWidgetOff(guitar_preset_button)
     end
 end
 
@@ -801,6 +784,25 @@ on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from block_b
         else
             SetWidgetValue(block_bass_reverb, 0)
         end
+    end
+end
+
+on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..27] From TSMIDI_DCHA
+    var CC_number : Integer
+    var player_index, chord_player_index: integer
+
+    CC_number = GetCCNumber(cc)
+    if IndexOf(cc_reset, CC_number) != -1 then
+        switchDelayedWidgetOn(reset_button)
+    elsif IndexOf(cc_stop, CC_number) != -1 then
+        switchDelayedWidgetOn(stop_button)
+    elsif IndexOf(cc_chord, CC_number) != -1 then
+        chord_player_index = IndexOf(cc_chord, CC_number)
+        SetWidgetValue(button_letter_array[chord_player_index], 0)
+        SetWidgetValue(button_letter_array[chord_player_index], 1)
+    elsif IndexOf(cc_play, CC_number) != -1 then
+        player_index = IndexOf(cc_play, CC_number)
+        SetWidgetValue(button_play_array[player_index], 1)
     end
 end
 
@@ -816,6 +818,10 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..22] From TSMIDI_
     end
 end
 
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 26 From TSMIDI_IZDA
+    switchDelayedWidgetOn(guitar_preset_button)
+end
+
 on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZDA
     var CC_number : Integer
     var audio_track : Integer
@@ -825,39 +831,27 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
     if current_variation == 14 then
         // especial Electroshock
         if CC_number == 25 then
-            SetWidgetValue(special_button_1, 1)
-            fullResetSequence()
-            SetWidgetValue(bass_button, 1)
-            setGuitarOff()
-            setOctaveOn()
-            switchDelayedWidgetOff(special_button_1)
+            switchDelayedWidgetOn(special_button_1)
+            switchDelayedWidgetOn(reset_button)
+            switchButtonOn(octave_button)
         elsif CC_number == 27 then
-            SetWidgetValue(special_button_2, 1)
-            stopPlayer()
-            EnablePlayhead(true)
-            fullResetSequence()
-
-            switchButton(button_play_2);
-            startPlayer(1)
-            switchDelayedWidgetOff(special_button_2)
+            switchDelayedWidgetOn(special_button_2)
+            switchDelayedWidgetOn(reset_button)
+            switchButtonOn(button_play_2);
         end
     elsif current_variation == 13 then
         // especial Rita
         if CC_number == 27 then
-            SetWidgetValue(special_button_2, 1)
-            fullResetSequence()
-            SetWidgetValue(bass_reverb_button, 0)
-            switchDelayedWidgetOff(special_button_2)
+            switchDelayedWidgetOn(special_button_2)
+            switchDelayedWidgetOn(reset_button)
+            switchButtonOff(bass_reverb_button)
         end
     elsif current_variation == 19 then
         // especial Another way around
         if CC_number == 25 then
-            SetWidgetValue(special_button_1, 1)
-            fullResetSequence()
-            SetWidgetValue(bass_button, 1)
-            setGuitarOff()
-            setOctaveOn()
-            switchDelayedWidgetOff(special_button_1)
+            switchDelayedWidgetOn(special_button_1)
+            switchDelayedWidgetOn(reset_button)
+            switchButtonOn(octave_button)
         end
     end
 end
