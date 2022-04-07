@@ -346,7 +346,6 @@ function getChordName(chord: MidiMessage array) returns string
         end
     end
     chord_name = chord_names[keynote_number] + type_text
-    Print(chord_name)
     result = chord_name
 end
 // ==============================================
