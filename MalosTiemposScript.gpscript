@@ -5,9 +5,14 @@ var song_player_array: PluginBlock array = [SongPlayer, SongPlayer2, SongPlayer3
 var BassGuitarMixer, AudioPlayerMixer: PluginBlock
 var cycle_1, cycle_2, cycle_3, cycle_4: widget
 var cycle_array: widget array = [cycle_1, cycle_2, cycle_3, cycle_4]
+var chord_root_1, chord_root_2, chord_root_3, chord_root_4: widget
+var chord_root_array: widget array = [chord_root_1, chord_root_2, chord_root_3, chord_root_4]
 
 var button_A, button_B, button_C, button_D: widget
 var button_letter_array: widget array = [button_A, button_B, button_C, button_D]
+
+var label_section_1, label_section_2, label_section_3, label_section_4, label_section_5, label_section_6, label_section_7, label_section_8, label_section_9, label_section_10: widget
+var section_labels: widget array = [label_section_1, label_section_2, label_section_3, label_section_4, label_section_5, label_section_6, label_section_7, label_section_8, label_section_9, label_section_10]
 
 var button_play_1, button_play_2: widget
 var button_play_array: widget array = [button_play_1, button_play_2]
@@ -116,6 +121,9 @@ var bass_reverb_saved: Boolean = false
 var preset_label_array: String array = ["1", "2"]
 var filter_off_value: double = 0.6
 var filter_on_value: double = 0.0
+var section_index: Integer = -1;
+var section_label_on: double = 1.0
+var section_label_off: double = 0.5
 
 var start_time: double
 var delayed_widgets: widget array
@@ -161,16 +169,16 @@ Initialization
     SetVariation(0)
 end
 
-function setTrackButtonOff(button_widget: widget, chord_name_widget: widget)
-    SetWidgetValue(button_widget, 0)
-    SetWidgetLabel(chord_name_widget, "")
+function setTrackButtonOff(track_number: integer)
+    SetWidgetValue(button_letter_array[track_number], 0)
+    SetWidgetLabel(chord_name_array[track_number], "")
 end
 
 function setTrackButtonsOff()
     var x: integer
     
     for x=0; x<4; x=x+1 do
-        setTrackButtonOff(button_letter_array[x], chord_name_array[x])
+        setTrackButtonOff(x)
     end
     current_chord_number = 0
 end
@@ -343,40 +351,57 @@ function getChordName(chord: MidiMessage array) returns string
 end
 // ==============================================
 
-function playChord(track_number : Integer)
-    var chord : MidiMessage Array
+function sendChordToMidiDevice(chord: MidiMessage Array)
+    var index : Integer
+
+    for index = 0; index < Size(chord); index = index + 1 do
+        TSMIDI_DCHA.SendNow(chord[index])
+    end
+end
+
+function playChord(track_number: Integer, play_root: boolean)
+    var chord_events : MidiMessage Array
+    var chord_for_playing : MidiMessage Array = []
+    var chord_for_naming: MidiMessage Array = []
     var note : MidiMessage
     var index : Integer
-    var hasAnyNoteOn : Boolean
+    var play_note: boolean = play_root
 
-    MidiSequence_CollectEventsNow(midi_sequence)
-    chord = MidiSequence_GetCurrentEvents(midi_sequence, track_number)
-    last_chord = []
     last_variation = current_variation
-    hasAnyNoteOn = false
-    For index = 0; index < Size(chord); index = index + 1 do
-        note = chord[index]
-        if IsNote(note) then
-            TSMIDI_DCHA.SendNow(note)
+    last_chord = []
+    MidiSequence_CollectEventsNow(midi_sequence)
+    chord_events = MidiSequence_GetCurrentEvents(midi_sequence, track_number)
+    for index = 0; index < Size(chord_events); index = index + 1 do
+        if IsNote(chord_events[index]) then
+            note = chord_events[index]
             if IsNoteOn(note) then
-                hasAnyNoteOn = true
-                last_chord <-- note
+                chord_for_naming <-- note
+                if !play_note then
+                    play_note = true
+                else
+                    chord_for_playing <-- note
+                    last_chord <-- note
+                end
+            else
+                chord_for_playing <-- note
             end
         end
     end
+
+    sendChordToMidiDevice(chord_for_playing)
     
-    if (hasAnyNoteOn) then
-        if Size(last_chord) >= 3 then
-            SetWidgetLabel(chord_name_array[track_number], getChordName(last_chord))
+    if Size(last_chord) > 0 then
+        if Size(chord_for_naming) >= 3 then
+            SetWidgetLabel(chord_name_array[track_number], getChordName(chord_for_naming))
         else
             SetWidgetLabel(chord_name_array[track_number], current_chord_number)
         end
     else
         MidiSequence_ResetToStart(midi_sequence)
         if GetWidgetValue(cycle_array[track_number]) == 1 then
-            playChord(track_number)
+            playChord(track_number, play_root)
         else
-            setTrackButtonsOff()
+            setTrackButtonOff(track_number)
         end
     end
 end
@@ -385,7 +410,7 @@ function stopChord(track_number: integer) Autotype
     var index : Integer
 
     if current_variation == last_variation then
-        setTrackButtonOff(button_letter_array[track_number], chord_name_array[track_number])
+        setTrackButtonOff(track_number)
     end
 
     MidiSequence_ResetToStart(midi_sequence)
@@ -395,8 +420,27 @@ function stopChord(track_number: integer) Autotype
     last_chord = []
 end
 
-function playChordSequence(CC_number : integer)
-    track_number = IndexOf(cc_chord, CC_number)
+function initSections()
+    var index : Integer
+
+    section_index = 0
+    SetWidgetValue(section_labels[section_index], section_label_on)
+    For index = 1; index < Size(section_labels); index = index + 1 do
+        SetWidgetValue(section_labels[index], section_label_off)
+    end
+end
+
+function nextSection()
+    if section_index >= 0 then
+        SetWidgetValue(section_labels[section_index], section_label_off)
+    end
+    if section_index < 9 then
+        section_index = section_index + 1
+        SetWidgetValue(section_labels[section_index], section_label_on)
+    end
+end
+
+function playChordSequence(track_number: integer, play_root: boolean)
     if track_number < number_of_tracks then
         if track_number != last_track_number Or current_variation != last_variation then
             if last_track_number >= 0 then
@@ -406,7 +450,8 @@ function playChordSequence(CC_number : integer)
             current_chord_number = 0
         end
         current_chord_number = current_chord_number + 1
-        playChord(track_number)
+        playChord(track_number, play_root)
+        nextSection()
     end
 end
 
@@ -691,6 +736,8 @@ function startAllProcesses(new_var: integer)
         SetWidgetValue(button_filter_2, filter_off_value)
         SetWidgetValue(button_filter_4, filter_off_value)
     end
+
+    //initSections()
 end
 
 // ================ EVENTS ================
@@ -765,9 +812,14 @@ on WidgetValueChanged (newValue : Double) from guitar_button
     end
 end
 
-on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
+on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
+    var play_root: boolean = false
+
     if newValue == 1 then
-        playChordSequence(cc_chord[index])
+        if GetWidgetValue(chord_root_array[track_index]) == 1 then
+            play_root = true
+        end
+        playChordSequence(track_index, play_root)
     end
 end
 
@@ -920,7 +972,6 @@ on BeatChanged(bar : integer, beat : integer)
                 
                 beat_change_at = Round(GetWidgetValue(beat_a_array[x]) * 100)
                 if beat_change_at > 0 and beat_change_at == current_beat then
-                    //playChordSequence(cc_chord[0])
                     SetWidgetValue(button_letter_array[0], 0)
                     SetWidgetValue(button_letter_array[0], 1)
                 end
