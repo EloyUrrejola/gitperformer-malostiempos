@@ -11,9 +11,6 @@ var chord_root_array: widget array = [chord_root_1, chord_root_2, chord_root_3, 
 var button_A, button_B, button_C, button_D: widget
 var button_letter_array: widget array = [button_A, button_B, button_C, button_D]
 
-var label_section_1, label_section_2, label_section_3, label_section_4, label_section_5, label_section_6, label_section_7, label_section_8, label_section_9, label_section_10: widget
-var section_labels: widget array = [label_section_1, label_section_2, label_section_3, label_section_4, label_section_5, label_section_6, label_section_7, label_section_8, label_section_9, label_section_10]
-
 var button_play_1, button_play_2: widget
 var button_play_array: widget array = [button_play_1, button_play_2]
 
@@ -121,9 +118,6 @@ var bass_reverb_saved: Boolean = false
 var preset_label_array: String array = ["1", "2"]
 var filter_off_value: double = 0.6
 var filter_on_value: double = 0.0
-var section_index: Integer = -1;
-var section_label_on: double = 1.0
-var section_label_off: double = 0.5
 
 var start_time: double
 var delayed_widgets: widget array
@@ -419,26 +413,6 @@ function stopChord(track_number: integer) Autotype
     last_chord = []
 end
 
-function initSections()
-    var index : Integer
-
-    section_index = 0
-    SetWidgetValue(section_labels[section_index], section_label_on)
-    For index = 1; index < Size(section_labels); index = index + 1 do
-        SetWidgetValue(section_labels[index], section_label_off)
-    end
-end
-
-function nextSection()
-    if section_index >= 0 then
-        SetWidgetValue(section_labels[section_index], section_label_off)
-    end
-    if section_index < 9 then
-        section_index = section_index + 1
-        SetWidgetValue(section_labels[section_index], section_label_on)
-    end
-end
-
 function playChordSequence(track_number: integer, play_root: boolean)
     if track_number < number_of_tracks then
         if track_number != last_track_number Or current_variation != last_variation then
@@ -450,7 +424,6 @@ function playChordSequence(track_number: integer, play_root: boolean)
         end
         current_chord_number = current_chord_number + 1
         playChord(track_number, play_root)
-        nextSection()
     end
 end
 
@@ -735,8 +708,6 @@ function startAllProcesses(new_var: integer)
         SetWidgetValue(button_filter_2, filter_off_value)
         SetWidgetValue(button_filter_4, filter_off_value)
     end
-
-    //initSections()
 end
 
 // ================ EVENTS ================
