@@ -124,6 +124,10 @@ var delayed_widgets: widget array
 var variation_time: double
 var events_allowed: boolean
 
+var track_notes: MidiMessage array
+var chord_positions: integer array
+var chord_lengths: integer array
+
 function setChordLetterValues(number_of_tracks: integer)
     var x: integer
     var filter_value, reset_value: double
@@ -352,6 +356,41 @@ function sendChordToMidiDevice(chord: MidiMessage Array)
     end
 end
 
+function getTrackNotes(track_number: integer, play_root: boolean)
+    var chord_events : MidiMessage Array = []
+    var end_of_file: boolean = false
+    var chord: MidiMessage array
+    var event_index: integer
+    var chord_index: integer
+
+    var index: integer
+
+    track_notes = []
+    chord_positions = []
+    chord_lengths = []
+    while !end_of_file do
+        MidiSequence_CollectEventsNow(midi_sequence)
+        chord_events = MidiSequence_GetCurrentEvents(midi_sequence, track_number)
+        chord = []
+        for event_index = 0; event_index < Size(chord_events); event_index = event_index + 1 do
+            if IsNoteOn(chord_events[event_index]) then
+                chord <-- chord_events[event_index]
+            end
+        end
+        if Size(chord) > 0 then
+            chord_positions <-- Size(track_notes)
+            chord_lengths <-- Size(chord)
+        end
+        for chord_index = 0; chord_index < Size(chord); chord_index = chord_index + 1 do
+            track_notes <-- chord[chord_index]
+        end
+        if Size(chord_events) == 0 then
+            end_of_file = true
+        end
+    end
+    MidiSequence_ResetToStart(midi_sequence)
+end
+
 function playChord(track_number: Integer, play_root: boolean)
     var chord_events : MidiMessage Array
     var chord_for_playing : MidiMessage Array = []
@@ -421,6 +460,7 @@ function playChordSequence(track_number: integer, play_root: boolean)
             end
             last_track_number = track_number
             current_chord_number = 0
+            getTrackNotes(track_number, play_root)
         end
         current_chord_number = current_chord_number + 1
         playChord(track_number, play_root)
