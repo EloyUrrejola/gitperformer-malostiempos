@@ -125,6 +125,7 @@ var variation_time: double
 var events_allowed: boolean
 
 var current_chord: MidiMessage array
+var chord_for_naming: MidiMessage array
 var track_notes: MidiMessage array
 var chord_positions: integer array
 var chord_lengths: integer array
@@ -169,8 +170,10 @@ Initialization
 end
 
 function setTrackButtonOff(track_number: integer)
-    SetWidgetValue(button_letter_array[track_number], 0)
-    SetWidgetLabel(chord_name_array[track_number], "")
+    if track_number >= 0 then
+        SetWidgetValue(button_letter_array[track_number], 0)
+        SetWidgetLabel(chord_name_array[track_number], "")
+    end
 end
 
 function setTrackButtonsOff()
@@ -186,6 +189,7 @@ function fullResetSequence()
     setTrackButtonsOff()
     MidiSequence_ResetToStart(midi_sequence)
     AllNotesOff(TSMIDI_DCHA)
+    last_chord = []
 end
 
 function stopPlayer()
@@ -349,16 +353,19 @@ function getChordName(chord: MidiMessage array) returns string
 end
 // ==============================================
 
-function sendChordToMidiDevice(chord: MidiMessage Array, is_note_on: boolean)
+function sendChordOffToMidiDevice(chord: MidiMessage Array)
     var index : Integer
-    var note: MidiMessage
 
     for index = 0; index < Size(chord); index = index + 1 do
-        note = chord[index]
-        if !is_note_on then
-            note = ReinterpretAsNoteOffMessage(note)
-        end
-        TSMIDI_DCHA.SendNow(note)
+        TSMIDI_DCHA.SendNow(ReinterpretAsNoteOffMessage(chord[index]))
+    end
+end
+
+function sendChordToMidiDevice(chord: MidiMessage Array)
+    var index : Integer
+
+    for index = 0; index < Size(chord); index = index + 1 do
+        TSMIDI_DCHA.SendNow(chord[index])
     end
 end
 
@@ -366,8 +373,7 @@ function getTrackNotes(track_number: integer)
     var chord_events : MidiMessage Array = []
     var end_of_file: boolean = false
     var chord: MidiMessage array
-    var event_index: integer
-    var chord_index: integer
+    var index: integer
 
     track_notes = []
     chord_positions = []
@@ -376,17 +382,17 @@ function getTrackNotes(track_number: integer)
         MidiSequence_CollectEventsNow(midi_sequence)
         chord_events = MidiSequence_GetCurrentEvents(midi_sequence, track_number)
         chord = []
-        for event_index = 0; event_index < Size(chord_events); event_index = event_index + 1 do
-            if IsNoteOn(chord_events[event_index]) then
-                chord <-- chord_events[event_index]
+        for index = 0; index < Size(chord_events); index = index + 1 do
+            if IsNoteOn(chord_events[index]) then
+                chord <-- chord_events[index]
             end
         end
         if Size(chord) > 0 then
             chord_positions <-- Size(track_notes)
             chord_lengths <-- Size(chord)
         end
-        for chord_index = 0; chord_index < Size(chord); chord_index = chord_index + 1 do
-            track_notes <-- chord[chord_index]
+        for index = 0; index < Size(chord); index = index + 1 do
+            track_notes <-- chord[index]
         end
         if Size(chord_events) == 0 then
             end_of_file = true
@@ -397,99 +403,51 @@ end
 
 function getCurrentChord()
     var x: integer
-    var chord_index: integer = current_chord_number - 1
-Print(chord_index)
-    for x=chord_positions[chord_index]; x<chord_positions[chord_index]+chord_lengths[chord_index]; x=x+1 do
-        current_chord <-- track_notes[x]
-    Print(track_notes[x])
-    end
-end
-
-function playChord(track_number: Integer, play_root: boolean)
-    var chord_events : MidiMessage Array
-    var chord_for_playing : MidiMessage Array = []
-    var chord_for_naming: MidiMessage Array = []
-    var note : MidiMessage
-    var index : Integer
-    var play_note: boolean = play_root
-
-    if Size(last_chord) > 0 then
-        //sendChordToMidiDevice(last_chord, false)
-    end
-
-    last_variation = current_variation
-    last_chord = []
-
-    if Size(chord_positions) >= current_chord_number then
-        getCurrentChord()
+    
+    current_chord = []
+    chord_for_naming = []
+    if Size(chord_positions) > current_chord_number then
+        for x=chord_positions[current_chord_number]; x<chord_positions[current_chord_number]+chord_lengths[current_chord_number]; x=x+1 do
+            if GetWidgetValue(chord_root_array[last_track_number]) == 1 or x > chord_positions[current_chord_number] then
+                current_chord <-- track_notes[x]
+            end
+            chord_for_naming <-- track_notes[x]
+        end
+        current_chord_number = current_chord_number + 1
     else
         current_chord_number = 0
-    end
-
-    MidiSequence_CollectEventsNow(midi_sequence)
-    chord_events = MidiSequence_GetCurrentEvents(midi_sequence, track_number)
-    for index = 0; index < Size(chord_events); index = index + 1 do
-        if IsNote(chord_events[index]) then
-            note = chord_events[index]
-            if IsNoteOn(note) then
-                chord_for_naming <-- note
-                if !play_note then
-                    play_note = true
-                else
-                    chord_for_playing <-- note
-                    last_chord <-- note
-                end
-            else
-                chord_for_playing <-- note
-            end
+        if GetWidgetValue(cycle_array[last_track_number]) == 1 then
+            getCurrentChord()
         end
     end
-
-    sendChordToMidiDevice(chord_for_playing, true)
-    
-    if Size(last_chord) > 0 then
-        if Size(chord_for_naming) >= 3 then
-            SetWidgetLabel(chord_name_array[track_number], getChordName(chord_for_naming))
-        else
-            SetWidgetLabel(chord_name_array[track_number], current_chord_number)
-        end
-    else
-        MidiSequence_ResetToStart(midi_sequence)
-        if GetWidgetValue(cycle_array[track_number]) == 1 then
-            current_chord_number = current_chord_number + 1
-            playChord(track_number, play_root)
-        else
-            setTrackButtonOff(track_number)
-        end
-    end
+    last_chord = current_chord
 end
 
-function stopChord(track_number: integer) Autotype
-    var index : Integer
+function playChord(track_number: Integer)
+    sendChordOffToMidiDevice(last_chord)
+    getCurrentChord()
+    sendChordToMidiDevice(current_chord)
 
-    if current_variation == last_variation then
+    if Size(current_chord) == 0 then
         setTrackButtonOff(track_number)
     end
-
-    MidiSequence_ResetToStart(midi_sequence)
-    For index = 0; index < Size(last_chord); index = index + 1 do
-        TSMIDI_DCHA.SendNow(ReinterpretAsNoteOffMessage(last_chord[index]))
+    if Size(chord_for_naming) >= 3 then
+        SetWidgetLabel(chord_name_array[track_number], getChordName(chord_for_naming))
+    elsif current_chord_number > 0 then
+        SetWidgetLabel(chord_name_array[track_number], current_chord_number)
     end
-    last_chord = []
 end
 
-function playChordSequence(track_number: integer, play_root: boolean)
+function playChordSequence(track_number: integer)
     if track_number < number_of_tracks then
         if track_number != last_track_number Or current_variation != last_variation then
-            if last_track_number >= 0 then
-                stopChord(last_track_number)
-            end
+            setTrackButtonOff(last_track_number)
             last_track_number = track_number
             current_chord_number = 0
             getTrackNotes(track_number)
         end
-        current_chord_number = current_chord_number + 1
-        playChord(track_number, play_root)
+        last_variation = current_variation
+        playChord(track_number)
     end
 end
 
@@ -852,10 +810,7 @@ on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from b
     var play_root: boolean = false
 
     if newValue == 1 then
-        if GetWidgetValue(chord_root_array[track_index]) == 1 then
-            play_root = true
-        end
-        playChordSequence(track_index, play_root)
+        playChordSequence(track_index)
     end
 end
 
