@@ -130,6 +130,13 @@ var track_notes: MidiMessage array
 var chord_positions: integer array
 var chord_lengths: integer array
 
+// chord panel
+var panel_chord_1, panel_chord_2, panel_chord_3, panel_chord_4, panel_chord_5, panel_chord_6, panel_chord_7, panel_chord_8, panel_chord_9, panel_chord_10, panel_chord_11, panel_chord_12, panel_chord_13, panel_chord_14, panel_chord_15, panel_chord_16, panel_chord_17, panel_chord_18, panel_chord_19, panel_chord_20, panel_chord_21, panel_chord_22, panel_chord_23, panel_chord_24: widget
+var panel_chord_array: widget array = [panel_chord_1, panel_chord_2, panel_chord_3, panel_chord_4, panel_chord_5, panel_chord_6, panel_chord_7, panel_chord_8, panel_chord_9, panel_chord_10, panel_chord_11, panel_chord_12, panel_chord_13, panel_chord_14, panel_chord_15, panel_chord_16, panel_chord_17, panel_chord_18, panel_chord_19, panel_chord_20, panel_chord_21, panel_chord_22, panel_chord_23, panel_chord_24]
+var panel_chord_on_value: double = 1.0
+var panel_chord_off_value: double = 0.5
+var panel_chord_empty_value: double = 0.0
+
 function setChordLetterValues(number_of_tracks: integer)
     var x: integer
     var filter_value, reset_value: double
@@ -185,10 +192,34 @@ function setTrackButtonsOff()
     current_chord_number = 0
 end
 
+function resetPanelChords()
+    var x: integer
+
+    for x=0; x<Size(panel_chord_array); x=x+1 do
+        SetWidgetLabel(panel_chord_array[x], "")
+        SetWidgetValue(panel_chord_array[x], panel_chord_empty_value)
+    end
+end
+
+function setPanelChordOn(chord_number: integer)
+    var x: integer
+
+    for x=0; x<Size(panel_chord_array); x=x+1 do
+        if (x == chord_number) then
+            SetWidgetValue(panel_chord_array[x], panel_chord_on_value)
+        elsif x < Size(chord_lengths) then
+            SetWidgetValue(panel_chord_array[x], panel_chord_off_value)
+        else
+            SetWidgetValue(panel_chord_array[x], panel_chord_empty_value)
+        end
+    end
+end
+
 function fullResetSequence()
     setTrackButtonsOff()
     MidiSequence_ResetToStart(midi_sequence)
     AllNotesOff(TSMIDI_DCHA)
+    resetPanelChords()
     last_chord = []
 end
 
@@ -374,7 +405,9 @@ function getTrackNotes(track_number: integer)
     var end_of_file: boolean = false
     var chord: MidiMessage array
     var index: integer
+    var chord_index: integer = 0
 
+    resetPanelChords()
     track_notes = []
     chord_positions = []
     chord_lengths = []
@@ -390,13 +423,19 @@ function getTrackNotes(track_number: integer)
         if Size(chord) > 0 then
             chord_positions <-- Size(track_notes)
             chord_lengths <-- Size(chord)
+            if Size(chord) > 2 and chord_index < Size(panel_chord_array) then
+                SetWidgetLabel(panel_chord_array[chord_index], getChordName(chord))
+                SetWidgetValue(panel_chord_array[chord_index], panel_chord_off_value)
+            end
         end
         for index = 0; index < Size(chord); index = index + 1 do
             track_notes <-- chord[index]
         end
+
         if Size(chord_events) == 0 then
             end_of_file = true
         end
+        chord_index = chord_index + 1
     end
     MidiSequence_ResetToStart(midi_sequence)
 end
@@ -420,10 +459,14 @@ function getCurrentChord()
             getCurrentChord()
         end
     end
+    setPanelChordOn(current_chord_number - 1)
     last_chord = current_chord
 end
 
 function playChord(track_number: Integer)
+    if current_chord_number == 0 then
+        getTrackNotes(track_number)
+    end
     sendChordOffToMidiDevice(last_chord)
     getCurrentChord()
     sendChordToMidiDevice(current_chord)
@@ -444,7 +487,6 @@ function playChordSequence(track_number: integer)
             setTrackButtonOff(last_track_number)
             last_track_number = track_number
             current_chord_number = 0
-            getTrackNotes(track_number)
         end
         last_variation = current_variation
         playChord(track_number)
@@ -682,6 +724,7 @@ function startAllProcesses(new_var: integer)
 
     loadMidiFile()
     stopPlayer()
+    resetPanelChords()
     
     // bypass audio players we don't need
     tracks = []
