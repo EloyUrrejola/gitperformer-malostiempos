@@ -131,11 +131,17 @@ var chord_positions: integer array
 var chord_lengths: integer array
 
 // chord panel
-var panel_chord_1, panel_chord_2, panel_chord_3, panel_chord_4, panel_chord_5, panel_chord_6, panel_chord_7, panel_chord_8, panel_chord_9, panel_chord_10, panel_chord_11, panel_chord_12, panel_chord_13, panel_chord_14, panel_chord_15, panel_chord_16, panel_chord_17, panel_chord_18, panel_chord_19, panel_chord_20, panel_chord_21, panel_chord_22, panel_chord_23, panel_chord_24: widget
-var panel_chord_array: widget array = [panel_chord_1, panel_chord_2, panel_chord_3, panel_chord_4, panel_chord_5, panel_chord_6, panel_chord_7, panel_chord_8, panel_chord_9, panel_chord_10, panel_chord_11, panel_chord_12, panel_chord_13, panel_chord_14, panel_chord_15, panel_chord_16, panel_chord_17, panel_chord_18, panel_chord_19, panel_chord_20, panel_chord_21, panel_chord_22, panel_chord_23, panel_chord_24]
+var panel_chord_1, panel_chord_2, panel_chord_3, panel_chord_4, panel_chord_5, panel_chord_6, panel_chord_7, panel_chord_8, panel_chord_9, panel_chord_10, panel_chord_11, panel_chord_12, panel_chord_13, panel_chord_14, panel_chord_15, panel_chord_16: widget
+var panel_chord_array: widget array = [panel_chord_1, panel_chord_2, panel_chord_3, panel_chord_4, panel_chord_5, panel_chord_6, panel_chord_7, panel_chord_8, panel_chord_9, panel_chord_10, panel_chord_11, panel_chord_12, panel_chord_13, panel_chord_14, panel_chord_15, panel_chord_16]
+var panel_chord_row_1, panel_chord_row_2: widget;
+var panel_chord_row_array: widget array = [panel_chord_row_1, panel_chord_row_2]
 var panel_chord_on_value: double = 1.0
 var panel_chord_off_value: double = 0.5
 var panel_chord_empty_value: double = 0.0
+var panel_chord_row_on_value: double = 0.6
+var panel_chord_row_off_value: double = 0.0
+var panel_chord_shift: integer
+var panel_chord_columns: integer = 8
 
 function setChordLetterValues(number_of_tracks: integer)
     var x: integer
@@ -192,7 +198,7 @@ function setTrackButtonsOff()
     current_chord_number = 0
 end
 
-function resetPanelChords()
+function removePanelChords()
     var x: integer
 
     for x=0; x<Size(panel_chord_array); x=x+1 do
@@ -201,18 +207,27 @@ function resetPanelChords()
     end
 end
 
-function setPanelChordOn(chord_number: integer)
-    var x: integer
+function drawPanelRows()
+    var x, row: integer
 
-    for x=0; x<Size(panel_chord_array); x=x+1 do
-        if (x == chord_number) then
-            SetWidgetValue(panel_chord_array[x], panel_chord_on_value)
-        elsif x < Size(chord_lengths) then
-            SetWidgetValue(panel_chord_array[x], panel_chord_off_value)
+    for x=0; x<Size(panel_chord_row_array); x=x+1 do
+        row = x + 1 + panel_chord_shift
+        SetWidgetLabel(panel_chord_row_array[x], row)
+        if (Size(chord_positions) > 0) and (row < 2 || Size(chord_positions) > panel_chord_columns) then
+            SetWidgetValue(panel_chord_row_array[x], panel_chord_row_on_value)
         else
-            SetWidgetValue(panel_chord_array[x], panel_chord_empty_value)
+            SetWidgetValue(panel_chord_row_array[x], panel_chord_row_off_value)
         end
     end
+end
+
+function resetPanelChords()
+    removePanelChords()
+    panel_chord_shift = 0
+    chord_positions = []
+    chord_lengths = []
+    track_notes = []
+    drawPanelRows()
 end
 
 function fullResetSequence()
@@ -400,6 +415,46 @@ function sendChordToMidiDevice(chord: MidiMessage Array)
     end
 end
 
+function drawPanelChords()
+    var x, y: integer
+    var chord: MidiMessage array
+
+    removePanelChords()
+    drawPanelRows()
+    for x=panel_chord_columns*panel_chord_shift; x<Size(chord_positions); x=x+1 do
+        chord = []
+        for y=chord_positions[x]; y<chord_positions[x]+chord_lengths[x]; y=y+1 do
+            chord <-- track_notes[y]
+        end
+        if Size(chord) > 2 and (x - panel_chord_columns*panel_chord_shift) < Size(panel_chord_array) then
+            SetWidgetLabel(panel_chord_array[x - panel_chord_columns*panel_chord_shift], getChordName(chord))
+            SetWidgetValue(panel_chord_array[x - panel_chord_columns*panel_chord_shift], panel_chord_off_value)
+        end
+    end
+
+end
+
+function setPanelChordOn(chord_number: integer)
+    var x: integer
+    if (Size(chord_positions) > Size(panel_chord_array))
+            and chord_number % panel_chord_columns == 0
+            and chord_number < Size(chord_positions) - panel_chord_columns - 1
+            and chord_number > 0 then
+        panel_chord_shift = panel_chord_shift + 1
+        drawPanelChords()
+    end
+
+    for x=panel_chord_columns*panel_chord_shift; x-panel_chord_columns*panel_chord_shift < Size(panel_chord_array); x=x+1 do
+        if (x == chord_number) then
+            SetWidgetValue(panel_chord_array[x - panel_chord_columns*panel_chord_shift], panel_chord_on_value)
+        elsif x < Size(chord_lengths) then
+            SetWidgetValue(panel_chord_array[x - panel_chord_columns*panel_chord_shift], panel_chord_off_value)
+        else
+            SetWidgetValue(panel_chord_array[x - panel_chord_columns*panel_chord_shift], panel_chord_empty_value)
+        end
+    end
+end
+
 function getTrackNotes(track_number: integer)
     var chord_events : MidiMessage Array = []
     var end_of_file: boolean = false
@@ -407,7 +462,6 @@ function getTrackNotes(track_number: integer)
     var index: integer
     var chord_index: integer = 0
 
-    resetPanelChords()
     track_notes = []
     chord_positions = []
     chord_lengths = []
@@ -423,10 +477,6 @@ function getTrackNotes(track_number: integer)
         if Size(chord) > 0 then
             chord_positions <-- Size(track_notes)
             chord_lengths <-- Size(chord)
-            if Size(chord) > 2 and chord_index < Size(panel_chord_array) then
-                SetWidgetLabel(panel_chord_array[chord_index], getChordName(chord))
-                SetWidgetValue(panel_chord_array[chord_index], panel_chord_off_value)
-            end
         end
         for index = 0; index < Size(chord); index = index + 1 do
             track_notes <-- chord[index]
@@ -466,6 +516,7 @@ end
 function playChord(track_number: Integer)
     if current_chord_number == 0 then
         getTrackNotes(track_number)
+        drawPanelChords()
     end
     sendChordOffToMidiDevice(last_chord)
     getCurrentChord()
@@ -487,6 +538,8 @@ function playChordSequence(track_number: integer)
             setTrackButtonOff(last_track_number)
             last_track_number = track_number
             current_chord_number = 0
+            panel_chord_shift = 0
+            drawPanelRows()
         end
         last_variation = current_variation
         playChord(track_number)
