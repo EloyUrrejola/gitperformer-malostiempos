@@ -118,6 +118,7 @@ var bass_reverb_saved: Boolean = false
 var preset_label_array: String array = ["1", "2"]
 var filter_off_value: double = 0.6
 var filter_on_value: double = 0.0
+var letters: string array = ["A", "B", "C", "D"]
 
 var start_time: double
 var delayed_widgets: widget array
@@ -129,6 +130,7 @@ var chord_for_naming: MidiMessage array
 var track_notes: MidiMessage array
 var chord_positions: integer array
 var chord_lengths: integer array
+var current_letter_index: integer
 
 // chord panel
 var panel_chord_1, panel_chord_2, panel_chord_3, panel_chord_4, panel_chord_5, panel_chord_6, panel_chord_7, panel_chord_8, panel_chord_9, panel_chord_10, panel_chord_11, panel_chord_12, panel_chord_13, panel_chord_14, panel_chord_15, panel_chord_16: widget
@@ -142,6 +144,26 @@ var panel_chord_row_on_value: double = 0.6
 var panel_chord_row_off_value: double = 0.0
 var panel_chord_shift: integer
 var panel_chord_columns: integer = 8
+var panel_letter_label_1, panel_letter_label_2, panel_letter_label_3, panel_letter_label_4, panel_letter_label_5, panel_letter_label_6, panel_letter_label_7, panel_letter_label_8, panel_letter_label_9, panel_letter_label_10, panel_letter_label_11, panel_letter_label_12, panel_letter_label_13, panel_letter_label_14, panel_letter_label_15, panel_letter_label_16, panel_letter_label_17, panel_letter_label_18, panel_letter_label_19, panel_letter_label_20: widget
+var panel_letter_array: widget array = [panel_letter_label_1, panel_letter_label_2, panel_letter_label_3, panel_letter_label_4, panel_letter_label_5, panel_letter_label_6, panel_letter_label_7, panel_letter_label_8, panel_letter_label_9, panel_letter_label_10, panel_letter_label_11, panel_letter_label_12, panel_letter_label_13, panel_letter_label_14, panel_letter_label_15, panel_letter_label_16, panel_letter_label_17, panel_letter_label_18, panel_letter_label_19, panel_letter_label_20]
+var panel_letter_empty_value: double = 0.0
+var panel_letter_on_value: double = 1.0
+var panel_letter_off_value: double = 0.5
+var panel_letter_songs: string array = ["Index", "Terrenal", "Rufita", "Como una reggaedera", "Rita", "Electroshock", "Another way around"]
+var panel_letter_labels: string array = ["A", "ABACABACA", "BABA", "AA", "ABCA", "AAA", "ABACCBA"]
+var letter_array: string array
+
+function indexOfStringArray(text: string array, search: string) returns integer
+    var x: integer
+    var return: integer = -1
+    
+    for x=0; x<Size(text); x=x+1 do
+        if text[x] == search then
+            return = x
+        end
+    end
+    result = return
+end
 
 function setChordLetterValues(number_of_tracks: integer)
     var x: integer
@@ -196,6 +218,21 @@ function setTrackButtonsOff()
         setTrackButtonOff(x)
     end
     current_chord_number = 0
+end
+
+function getPanelLetters()
+    var x, song_index: integer
+    var letters: string
+
+    letter_array = []
+    song_index = indexOfStringArray(panel_letter_songs, song_name)
+    if song_index != -1 then
+        letters = panel_letter_labels[song_index]
+        for x=0; x<Length(letters); x=x+1 do
+            letter_array <-- CopySubstring(letters, x, 1)
+        end
+    end
+    current_letter_index = 0
 end
 
 function removePanelChords()
@@ -399,6 +436,43 @@ function getChordName(chord: MidiMessage array) returns string
 end
 // ==============================================
 
+function drawPanelLetters()
+    var position, x: integer
+    
+    position = Round(Size(panel_letter_array) / 2) - Round(IntToFloat(Size(letter_array)) / 2)
+    for x=0; x<Size(panel_letter_array); x=x+1 do
+        if (x >= position) and (x < position + Size(letter_array)) then
+            SetWidgetLabel(panel_letter_array[x], letter_array[x - position])
+            SetWidgetValue(panel_letter_array[x], panel_letter_off_value)
+        else
+            SetWidgetLabel(panel_letter_array[x], "")
+            SetWidgetValue(panel_letter_array[x], panel_letter_empty_value)
+        end
+    end
+end
+
+function setPanelLetterOn(track_number: integer)
+    var position, x, x_position: integer
+
+    if Size(letter_array) > 0 then
+        if letter_array[current_letter_index] == letters[track_number] then
+            position = Round(Size(panel_letter_array) / 2) - Round(IntToFloat(Size(letter_array)) / 2)
+            for x=0; x<Size(letter_array); x=x+1 do
+                x_position = x + position
+                if x == current_letter_index then
+                    SetWidgetValue(panel_letter_array[x_position], panel_letter_on_value)
+                else
+                    SetWidgetValue(panel_letter_array[x_position], panel_letter_off_value)
+                end
+            end
+            current_letter_index = current_letter_index + 1
+            if current_letter_index >= Size(letter_array) then
+                current_letter_index = 0
+            end
+        end
+    end
+end
+
 function sendChordOffToMidiDevice(chord: MidiMessage Array)
     var index : Integer
 
@@ -431,7 +505,6 @@ function drawPanelChords()
             SetWidgetValue(panel_chord_array[x - panel_chord_columns*panel_chord_shift], panel_chord_off_value)
         end
     end
-
 end
 
 function setPanelChordOn(chord_number: integer)
@@ -517,6 +590,7 @@ function playChord(track_number: Integer)
     if current_chord_number == 0 then
         getTrackNotes(track_number)
         drawPanelChords()
+        setPanelLetterOn(track_number)
     end
     sendChordOffToMidiDevice(last_chord)
     getCurrentChord()
@@ -609,16 +683,6 @@ function setGuitarPreset(guitar_preset: integer)
         SetParameter(MIDIGuitarChannel, 1, GetWidgetValue(guitar_midi_channel_array[guitar_preset]) * 10 / 16)
     else
         SetPluginBypassed(GuitarMidi, true)
-    end
-end
-
-function indexOfStringArray(text: string array, search: string) returns integer
-    var x: integer
-    
-    for x=0; x<Size(text); x=x+1 do
-        if text[x] == search then
-            result = x
-        end
     end
 end
 
@@ -778,6 +842,8 @@ function startAllProcesses(new_var: integer)
     loadMidiFile()
     stopPlayer()
     resetPanelChords()
+    getPanelLetters()
+    drawPanelLetters()
     
     // bypass audio players we don't need
     tracks = []
@@ -807,17 +873,17 @@ function startAllProcesses(new_var: integer)
     SetWidgetValue(guitar_background_number_2, 0)
     checkPlayerTracks()
     
-    if current_variation == 14 then
+    if song_name == "Electroshock" then
         SetWidgetLabel(special_label_1, "stop chords octave on")
         SetWidgetLabel(special_label_2, "stop chords play audio 2")
         SetWidgetValue(button_filter_2, filter_on_value)
         SetWidgetValue(button_filter_4, filter_on_value)
-    elsif current_variation == 13 then
+    elsif song_name == "Rita" then
         SetWidgetLabel(special_label_1, "")
         SetWidgetLabel(special_label_2, "stop chords and reverb off")
         SetWidgetValue(button_filter_2, filter_off_value)
         SetWidgetValue(button_filter_4, filter_on_value)
-    elsif current_variation == 19 then
+    elsif song_name == "Another way around" then
         SetWidgetLabel(special_label_1, "stop chords octave on")
         SetWidgetLabel(special_label_2, "")
         SetWidgetValue(button_filter_2, filter_on_value)
@@ -967,7 +1033,7 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
     var player_index: integer
     
     CC_number = GetCCNumber(cc)
-    if current_variation == 14 then
+    if song_name == "Electroshock" then
         // especial Electroshock
         if CC_number == 25 then
             switchDelayedWidgetOn(special_button_1)
@@ -978,14 +1044,14 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
             switchDelayedWidgetOn(reset_button)
             switchButtonOn(button_play_2);
         end
-    elsif current_variation == 13 then
+    elsif song_name == "Rita" then
         // especial Rita
         if CC_number == 27 then
             switchDelayedWidgetOn(special_button_2)
             switchDelayedWidgetOn(reset_button)
             switchButtonOff(bass_reverb_button)
         end
-    elsif current_variation == 19 then
+    elsif song_name == "Another way around" then
         // especial Another way around
         if CC_number == 25 then
             switchDelayedWidgetOn(special_button_1)
