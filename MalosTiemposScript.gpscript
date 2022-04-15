@@ -680,7 +680,7 @@ function setGuitarPreset(guitar_preset: integer)
     
     if GetWidgetValue(guitar_midi_button_array[guitar_preset]) == 1 then
         SetPluginBypassed(GuitarMidi, false)
-        SetParameter(MIDIGuitarChannel, 1, GetWidgetValue(guitar_midi_channel_array[guitar_preset]) * 10 / 16)
+        SetParameter(MIDIGuitarChannel, 1, (GetWidgetValue(guitar_midi_channel_array[guitar_preset]) * 10 - 1) / 15)
     else
         SetPluginBypassed(GuitarMidi, true)
     end
