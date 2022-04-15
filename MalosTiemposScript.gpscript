@@ -27,7 +27,6 @@ var guitar_plugins: PluginBlock array = [GuitarPitch1, GuitarPitch2, GuitarAmp, 
 var guitar_pitch_array: PluginBlock array = [GuitarPitch1, GuitarPitch2]
 var octave_pitch_select, guitar_pitch_select_1, guitar_pitch_select_2: widget
 var guitar_pitch_select_array: widget array = [guitar_pitch_select_1, guitar_pitch_select_2]
-var MIDI_button: widget
 
 var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amount, octave_reverb_length: widget
 
