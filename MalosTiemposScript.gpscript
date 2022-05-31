@@ -1,7 +1,8 @@
 var TSMIDI_DCHA : MidiInBlock
 var SongPlayer, SongPlayer2, SongPlayer3, SongPlayer4, SongPlayer5, SongPlayer6, SongPlayer7, SongPlayer8, SongPlayer9, SongPlayer10, SongPlayer11, SongPlayer12: PluginBlock
 var song_player_array: PluginBlock array = [SongPlayer, SongPlayer2, SongPlayer3, SongPlayer4, SongPlayer5, SongPlayer6, SongPlayer7, SongPlayer8, SongPlayer9, SongPlayer10, SongPlayer11, SongPlayer12]
-
+var MidiFilePlayer: PluginBlock
+var OmnisphereInstrument: PluginBlock
 var BassGuitarMixer, AudioPlayerMixer: PluginBlock
 var cycle_1, cycle_2, cycle_3, cycle_4: widget
 var cycle_array: widget array = [cycle_1, cycle_2, cycle_3, cycle_4]
@@ -23,7 +24,7 @@ var bass_cc: Integer = 20
 var octave_cc: Integer = 21
 var guitar_cc: Integer = 22
 var GuitarGain, GuitarPitch1, GuitarPitch2, GuitarAmp, GuitarDelay, GuitarReverb, GuitarMidi, MIDIGuitarChannel: PluginBlock
-var guitar_plugins: PluginBlock array = [GuitarPitch1, GuitarPitch2, GuitarAmp, GuitarDelay, GuitarReverb, GuitarMidi]
+var guitar_plugins: PluginBlock array = [GuitarPitch1, GuitarPitch2, GuitarAmp, GuitarDelay, GuitarReverb]
 var guitar_pitch_array: PluginBlock array = [GuitarPitch1, GuitarPitch2]
 var octave_pitch_select, guitar_pitch_select_1, guitar_pitch_select_2: widget
 var guitar_pitch_select_array: widget array = [guitar_pitch_select_1, guitar_pitch_select_2]
@@ -92,7 +93,7 @@ var midi_channel, midi_volume: widget
 
 var audio_track_length: integer = 20
 var knob_widget_array: widget array = [play_1_track, play_2_track, player_length_1, player_length_2, guitar_midi_channel_1, guitar_midi_channel_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel]
-var knob_widget_label_array: string array = ["track", "track", "sec", "sec", "channel", "channel", "preset", "preset", "sec", "sec", "channel"]
+var knob_widget_label_array: string array = ["track", "track", "sec", "sec", "channel", "channel", "preset", "preset", "sec", "sec", "ch"]
 var knob_widget_led_array: widget array = [player_1_led, player_2_led, player_length_led_1, player_length_led_2, guitar_midi_button_1, guitar_midi_button_2, guitar_amp_button_1, guitar_amp_button_2, beat_A_led_1, beat_A_led_2, button_filter_4]
 var knob_widget_range_array: integer array = [audio_track_length, audio_track_length, 100, 100, 10, 10, 10, 10, 100, 100, 10]
 var knob_widget_led_on_array: double array = [0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
@@ -200,7 +201,6 @@ function setBassName()
 end
 
 Initialization
-    SetBPM(60.0)
     SetVariation(0)
 end
 
@@ -277,7 +277,7 @@ end
 
 function stopPlayer()
     var x: integer
-    
+
     EnablePlayhead(false)
     for x=0; x<12; x=x+1 do
         SetParameter(song_player_array[x], 0, 0)
@@ -647,10 +647,8 @@ function setGuitarPreset(guitar_preset: integer)
     if GetWidgetValue(guitar_amp_button_array[guitar_preset]) == 1 then
         SetPluginBypassed(GuitarAmp, false)
         sendGuitarAmpPreset(GetWidgetValue(guitar_amp_preset_array[guitar_preset]))
-        //SetPluginEditorXYPosition(GuitarAmp, 0, 380)
     else
         SetPluginBypassed(GuitarAmp, true)
-        //ClosePlugin(GuitarAmp)
     end
     
     /*if GetWidgetValue(guitar_chorus_button_array[guitar_preset]) == 1 then
@@ -677,13 +675,6 @@ function setGuitarPreset(guitar_preset: integer)
         SetParameter(GuitarReverb, 1, GetWidgetValue(guitar_reverb_length_array[guitar_preset]))
     else
         SetPluginBypassed(GuitarReverb, true)
-    end
-    
-    if GetWidgetValue(guitar_midi_button_array[guitar_preset]) == 1 then
-        SetPluginBypassed(GuitarMidi, false)
-        SetParameter(MIDIGuitarChannel, 1, (GetWidgetValue(guitar_midi_channel_array[guitar_preset]) * 10 - 1) / 15)
-    else
-        SetPluginBypassed(GuitarMidi, true)
     end
 end
 
@@ -723,7 +714,6 @@ end
 function switchGuitarOff()
     SetParameter(GuitarGain, 1, 1)
     switchGuitarPluginsOff()
-    //ClosePlugin(GuitarAmp)
 end
 
 function switchOctaveOn()
@@ -749,8 +739,6 @@ end
 function switchOctaveOff()
     SetParameter(GuitarGain, 1, 1)
     switchGuitarPluginsOff()
-    //SetPluginBypassed(guitar_pitch_array[0], true)
-    //SetPluginBypassed(guitar_pitch_array[1], true)
     if bass_reverb_saved then
         SetWidgetValue(bass_reverb_button, 1)
         bass_reverb_saved = false
@@ -774,7 +762,6 @@ end
 
 function setOctaveOff()
     SetWidgetValue(octave_button, 0)
-    switchOctaveOff()
 end
 
 function setKnobLabel(w: Widget, label_text:String, track: Integer, led_widget: Widget, led_on_value: Double, led_off_value: Double, label_before: boolean) Returns boolean
@@ -834,6 +821,7 @@ function startAllProcesses(new_var: integer)
     var x: integer
     var tracks: integer array
     var bypassed: boolean
+    var bpm: double = 60.0
     
     SetTimersRunning(true);
     
@@ -858,6 +846,7 @@ function startAllProcesses(new_var: integer)
         end
         SetPluginBypassed(song_player_array[x], bypassed)
     end
+    SetPluginBypassed(OmnisphereInstrument, true)
     // fin bypass
     
     if GetWidgetValue(guitar_button) == 1 then
@@ -873,7 +862,7 @@ function startAllProcesses(new_var: integer)
     SetWidgetValue(guitar_background_number_1, 1)
     SetWidgetValue(guitar_background_number_2, 0)
     checkPlayerTracks()
-    
+
     if song_name == "Electroshock" then
         SetWidgetLabel(special_label_1, "stop chords octave on")
         SetWidgetLabel(special_label_2, "stop chords play audio 2")
@@ -886,13 +875,18 @@ function startAllProcesses(new_var: integer)
         SetWidgetValue(button_filter_4, filter_on_value)
     elsif song_name == "Another way around" then
         SetWidgetLabel(special_label_1, "stop chords octave on")
-        SetWidgetLabel(special_label_2, "")
+        SetWidgetLabel(special_label_2, "MIDI")
         SetWidgetValue(button_filter_2, filter_on_value)
-        SetWidgetValue(button_filter_4, filter_off_value)
+        bpm = 178.0
+    elsif song_name == "Luces y sombras" then
+        SetWidgetLabel(special_label_1, "guitar and MIDI")
+        SetWidgetLabel(special_label_2, "MIDI")
+        SetWidgetValue(button_filter_2, filter_on_value)
     else
         SetWidgetLabel(special_label_1, "")
         SetWidgetLabel(special_label_2, "MIDI")
     end
+    SetBPM(bpm)
 end
 
 // ================ EVENTS ================
@@ -909,18 +903,16 @@ end
 
 function startPlayer(player_index: integer)
     var audio_track : Integer
-    
+
     EnablePlayhead(true)
     audio_track = Round(GetWidgetValue(play_track_array[player_index]) * audio_track_length)
     if audio_track > 0 then
-        //SetWidgetValue(button_play_array[1 - player_index], 0)
         playAudioTrack(player_index, audio_track)
     end
 end
 
 on WidgetValueChanged (w: Widget, player_index: Integer, newValue : Double) from button_play_1, button_play_2
     if newValue == 1 then
-        //stopPlayer()
         startPlayer(player_index)
     end
 end
@@ -949,7 +941,7 @@ on WidgetValueChanged (newValue : Double) from octave_button
         SetWidgetValue(bass_button, 1)
         setGuitarOff()
         switchOctaveOn()
-    else
+    elsif GetWidgetValue(guitar_button) == 0 then
         switchOctaveOff()
     end
 end
@@ -957,10 +949,10 @@ end
 on WidgetValueChanged (newValue : Double) from guitar_button
     if events_allowed then
         if newValue == 1 then
-            SetWidgetValue(bass_button, 0)
             setOctaveOff()
             switchGuitarOn()
-        else
+            SetWidgetValue(bass_button, 0)
+        elsif GetWidgetValue(octave_button) == 0 then
             SetWidgetValue(bass_button, 1)
             switchGuitarOff()
         end
@@ -971,17 +963,20 @@ on WidgetValueChanged (newValue : Double) from special_button_2
     if GetWidgetValue(midi_channel) > 0 then
         if newValue == 1 then
             SetPluginBypassed(GuitarMidi, false)
+            SetPluginBypassed(OmnisphereInstrument, false)
             SetParameter(MIDIGuitarChannel, 1, (GetWidgetValue(midi_channel) * 10 - 1) / 15)
         else
             SetPluginBypassed(GuitarMidi, true)
+            SetPluginBypassed(OmnisphereInstrument, true)
         end
     end
 end
 
 on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
-    var play_root: boolean = false
-
-    if newValue == 1 then
+    if track_index == 3 and song_name == "Another way around" then
+        // ñapa play midi file
+        SetParameter(MidiFilePlayer, 3, newValue)
+    elsif newValue == 1 then
         playChordSequence(track_index)
     end
 end
@@ -1013,8 +1008,13 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..27] From TSMIDI_
         switchDelayedWidgetOn(stop_button)
     elsif IndexOf(cc_chord, CC_number) != -1 then
         chord_player_index = IndexOf(cc_chord, CC_number)
-        SetWidgetValue(button_letter_array[chord_player_index], 0)
-        SetWidgetValue(button_letter_array[chord_player_index], 1)
+        if chord_player_index == 3 and song_name == "Another way around" then
+            // ñapa play midi file
+            SetWidgetValue(button_D, 1 - GetWidgetValue(button_D))
+        else
+            SetWidgetValue(button_letter_array[chord_player_index], 0)
+            SetWidgetValue(button_letter_array[chord_player_index], 1)
+        end
     elsif IndexOf(cc_play, CC_number) != -1 then
         player_index = IndexOf(cc_play, CC_number)
         SetWidgetValue(button_play_array[player_index], 1)
@@ -1041,35 +1041,41 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
     var CC_number : Integer
     var audio_track : Integer
     var player_index: integer
-    
+
     CC_number = GetCCNumber(cc)
-    if song_name == "Electroshock" then
-        // especial Electroshock
-        if CC_number == 25 then
+
+    if CC_number == 25 then
+        if song_name == "Electroshock" then
             switchDelayedWidgetOn(special_button_1)
             switchDelayedWidgetOn(reset_button)
             switchButtonOn(octave_button)
-        elsif CC_number == 27 then
+        elsif song_name == "Another way around" then
+            switchDelayedWidgetOn(special_button_1)
+            switchDelayedWidgetOn(reset_button)
+            switchButtonOn(octave_button)
+        elsif song_name == "Luces y sombras" then
+            if GetWidgetValue(special_button_1) == 1 then
+                switchButtonOff(guitar_button)
+                switchButtonOff(special_button_2)
+            else
+                switchButtonOn(guitar_button)
+                switchButtonOn(special_button_2)
+            end
+            switchButton(special_button_1)
+        end
+    end
+    if CC_number == 27 then
+        if song_name == "Electroshock" then
             switchDelayedWidgetOn(special_button_2)
             switchDelayedWidgetOn(reset_button)
             switchButtonOn(button_play_2);
-        end
-    elsif song_name == "Rita" then
-        // especial Rita
-        if CC_number == 27 then
+        elsif song_name == "Rita" then
             switchDelayedWidgetOn(special_button_2)
             switchDelayedWidgetOn(reset_button)
             switchButtonOff(bass_reverb_button)
-        end
-    elsif song_name == "Another way around" then
-        // especial Another way around
-        if CC_number == 25 then
-            switchDelayedWidgetOn(special_button_1)
-            switchDelayedWidgetOn(reset_button)
-            switchButtonOn(octave_button)
-        end
-    else
-        if CC_number == 27 and GetWidgetValue(midi_channel) > 0 then
+        elsif song_name == "Another way around" then
+            Tap()
+        elsif GetWidgetValue(midi_channel) > 0 then
             // MIDI
             switchButton(special_button_2)
         end
