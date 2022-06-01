@@ -34,7 +34,7 @@ var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amoun
 var select_bass, bass_name: widget
 var bass_name_array: string array = ["Warwick", "Status"]
 
-var play_1_track, play_2_track: widget
+var play_1_track, play_2_track, midi_player_track: widget
 var play_track_array: widget array = [play_1_track, play_2_track]
 var play_1_volume, play_2_volume: widget
 var play_volume_array: widget array = [play_1_volume, play_2_volume]
@@ -92,13 +92,14 @@ var special_label_1, special_label_2: widget
 var midi_channel, midi_volume: widget
 
 var audio_track_length: integer = 20
-var knob_widget_array: widget array = [play_1_track, play_2_track, player_length_1, player_length_2, guitar_midi_channel_1, guitar_midi_channel_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel]
-var knob_widget_label_array: string array = ["track", "track", "sec", "sec", "channel", "channel", "preset", "preset", "sec", "sec", "ch"]
-var knob_widget_led_array: widget array = [player_1_led, player_2_led, player_length_led_1, player_length_led_2, guitar_midi_button_1, guitar_midi_button_2, guitar_amp_button_1, guitar_amp_button_2, beat_A_led_1, beat_A_led_2, button_filter_4]
-var knob_widget_range_array: integer array = [audio_track_length, audio_track_length, 100, 100, 10, 10, 10, 10, 100, 100, 10]
-var knob_widget_led_on_array: double array = [0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
-var knob_widget_led_off_array: double array = [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-var knob_widget_label_before: boolean array = [true, true, false, false, true, true, true, true, false, false, true]
+var midi_track_length: integer = 20
+var knob_widget_array: widget array = [play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_midi_channel_1, guitar_midi_channel_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel]
+var knob_widget_label_array: string array = ["track", "track", "track", "sec", "sec", "channel", "channel", "preset", "preset", "sec", "sec", "ch"]
+var knob_widget_led_array: widget array = [player_1_led, player_2_led, button_filter_16, player_length_led_1, player_length_led_2, guitar_midi_button_1, guitar_midi_button_2, guitar_amp_button_1, guitar_amp_button_2, beat_A_led_1, beat_A_led_2, button_filter_4]
+var knob_widget_range_array: integer array = [audio_track_length, audio_track_length, midi_track_length, 100, 100, 10, 10, 10, 10, 100, 100, 10]
+var knob_widget_led_on_array: double array = [0.6, 0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+var knob_widget_led_off_array: double array = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+var knob_widget_label_before: boolean array = [true, true, true, false, false, true, true, true, true, false, false, true]
 
 var chord_names: string array = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 var number_of_tracks : Integer
@@ -780,6 +781,7 @@ function setKnobLabel(w: Widget, label_text:String, track: Integer, led_widget: 
     end
     SetWidgetLabel(w, label)
     SetWidgetValue(led_widget, led_value)
+
     result = is_on
 end
 
@@ -790,9 +792,11 @@ function checkPlayerTracks()
     
     stop_button_value = filter_off_value
     for x=0; x<Size(knob_widget_array); x=x+1 do
-        widget_is_on = setKnobLabel(knob_widget_array[x], knob_widget_label_array[x], Round(GetWidgetValue(knob_widget_array[x]) * knob_widget_range_array[x]), knob_widget_led_array[x], knob_widget_led_on_array[x], knob_widget_led_off_array[x], knob_widget_label_before[x])
-        if (x==0 or x==1) and widget_is_on then
-            stop_button_value = filter_on_value
+        if x!=2 or number_of_tracks < 4 then
+            widget_is_on = setKnobLabel(knob_widget_array[x], knob_widget_label_array[x], Round(GetWidgetValue(knob_widget_array[x]) * knob_widget_range_array[x]), knob_widget_led_array[x], knob_widget_led_on_array[x], knob_widget_led_off_array[x], knob_widget_label_before[x])
+            if (x==0 or x==1) and widget_is_on then
+                stop_button_value = filter_on_value
+            end
         end
     end
     SetWidgetValue(button_filter_10, stop_button_value)
@@ -814,6 +818,28 @@ end
 
 function switchButton(widget_button: Widget)
     SetWidgetValue(widget_button, 1 - GetWidgetValue(widget_button))
+end
+
+function startPlayer(player_index: integer)
+    var audio_track : Integer
+
+    EnablePlayhead(true)
+    audio_track = Round(GetWidgetValue(play_track_array[player_index]) * audio_track_length)
+    if audio_track > 0 then
+        playAudioTrack(player_index, audio_track)
+    end
+end
+
+function startMidiPlayer()
+    setTrackButtonOff(last_track_number)
+    last_track_number = -1
+    current_chord_number = 0
+    panel_chord_shift = 0
+    removePanelChords()
+    sendChordOffToMidiDevice(last_chord)
+
+    SetParameter(MidiFilePlayer, 0, ((GetWidgetValue(midi_player_track) - (1.0 / midi_track_length)) / 128) * midi_track_length)
+    SetWidgetValue(button_D, 1 - GetWidgetValue(button_D))
 end
 
 function startAllProcesses(new_var: integer)
@@ -901,16 +927,6 @@ on WidgetValueChanged (newValue : Double) from select_bass
     setBassName()
 end
 
-function startPlayer(player_index: integer)
-    var audio_track : Integer
-
-    EnablePlayhead(true)
-    audio_track = Round(GetWidgetValue(play_track_array[player_index]) * audio_track_length)
-    if audio_track > 0 then
-        playAudioTrack(player_index, audio_track)
-    end
-end
-
 on WidgetValueChanged (w: Widget, player_index: Integer, newValue : Double) from button_play_1, button_play_2
     if newValue == 1 then
         startPlayer(player_index)
@@ -973,8 +989,7 @@ on WidgetValueChanged (newValue : Double) from special_button_2
 end
 
 on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
-    if track_index == 3 and song_name == "Another way around" then
-        // ñapa play midi file
+    if track_index == 3 and GetWidgetValue(midi_player_track) > 0 then
         SetParameter(MidiFilePlayer, 3, newValue)
     elsif newValue == 1 then
         playChordSequence(track_index)
@@ -1008,12 +1023,15 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..27] From TSMIDI_
         switchDelayedWidgetOn(stop_button)
     elsif IndexOf(cc_chord, CC_number) != -1 then
         chord_player_index = IndexOf(cc_chord, CC_number)
-        if chord_player_index == 3 and song_name == "Another way around" then
+        if chord_player_index == 3 and GetWidgetValue(midi_player_track) > 0 then
             // ñapa play midi file
-            SetWidgetValue(button_D, 1 - GetWidgetValue(button_D))
+            startMidiPlayer()
         else
             SetWidgetValue(button_letter_array[chord_player_index], 0)
             SetWidgetValue(button_letter_array[chord_player_index], 1)
+            if song_name == "Another way around" then
+                SetWidgetValue(button_D, 0)
+            end
         end
     elsif IndexOf(cc_play, CC_number) != -1 then
         player_index = IndexOf(cc_play, CC_number)
@@ -1082,7 +1100,7 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
     end
 end
 
-on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, player_length_1, player_length_2, guitar_midi_channel_1, guitar_midi_channel_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_midi_channel_1, guitar_midi_channel_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel
     var rounded_value : Double
     var new_value: Double
     var steps: integer = knob_widget_range_array[index]
