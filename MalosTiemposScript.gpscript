@@ -1024,7 +1024,6 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..27] From TSMIDI_
     elsif IndexOf(cc_chord, CC_number) != -1 then
         chord_player_index = IndexOf(cc_chord, CC_number)
         if chord_player_index == 3 and GetWidgetValue(midi_player_track) > 0 then
-            // ñapa play midi file
             startMidiPlayer()
         else
             SetWidgetValue(button_letter_array[chord_player_index], 0)
