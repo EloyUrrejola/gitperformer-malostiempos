@@ -34,7 +34,7 @@ var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amoun
 var select_bass, bass_name: widget
 var bass_name_array: string array = ["Warwick", "Status"]
 
-var play_1_track, play_2_track, midi_player_track: widget
+var play_1_track, play_2_track, midi_player_track, midi_file_player_label: widget
 var play_track_array: widget array = [play_1_track, play_2_track]
 var play_1_volume, play_2_volume: widget
 var play_volume_array: widget array = [play_1_volume, play_2_volume]
@@ -765,16 +765,16 @@ function setOctaveOff()
     SetWidgetValue(octave_button, 0)
 end
 
-function setKnobLabel(w: Widget, label_text:String, track: Integer, led_widget: Widget, led_on_value: Double, led_off_value: Double, label_before: boolean) Returns boolean
+function setKnobLabel(w: Widget, label_text:String, value: Integer, led_widget: Widget, led_on_value: Double, led_off_value: Double, label_before: boolean) Returns boolean
     var label: String = label_text
     var led_value: Double = led_on_value
     var is_on: boolean
     
     is_on = false
-    if track > 0 then
-        label = label_text + " " + track
+    if value > 0 then
+        label = label_text + " " + value
         if !label_before then
-            label = "" + track + " " + label_text
+            label = "" + value + " " + label_text
         end
         led_value = led_off_value
         is_on = true
@@ -830,6 +830,15 @@ function startPlayer(player_index: integer)
     end
 end
 
+function setMidiFileLabel()
+    SetParameter(MidiFilePlayer, 0, ((GetWidgetValue(midi_player_track) - (1.0 / midi_track_length)) / 128) * midi_track_length)
+    if GetWidgetValue(midi_player_track) > 0 then
+        SetWidgetLabel(midi_file_player_label, "MIDI FILE")
+    else
+        SetWidgetLabel(midi_file_player_label, "")
+    end
+end
+
 function startMidiPlayer()
     setTrackButtonOff(last_track_number)
     last_track_number = -1
@@ -838,7 +847,6 @@ function startMidiPlayer()
     removePanelChords()
     sendChordOffToMidiDevice(last_chord)
 
-    SetParameter(MidiFilePlayer, 0, ((GetWidgetValue(midi_player_track) - (1.0 / midi_track_length)) / 128) * midi_track_length)
     SetWidgetValue(button_D, 1 - GetWidgetValue(button_D))
 end
 
@@ -888,7 +896,8 @@ function startAllProcesses(new_var: integer)
     SetWidgetValue(guitar_background_number_1, 1)
     SetWidgetValue(guitar_background_number_2, 0)
     checkPlayerTracks()
-
+    setMidiFileLabel()
+    
     if song_name == "Electroshock" then
         SetWidgetLabel(special_label_1, "stop chords octave on")
         SetWidgetLabel(special_label_2, "stop chords play audio 2")
@@ -1109,6 +1118,9 @@ on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_
     if new_value != rounded_value then
         SetWidgetValue(w, IntToFloat(Round(new_value * steps)) / steps)
         checkPlayerTracks()
+        if index == 2 then
+            setMidiFileLabel()
+        end
     end
 end
 
