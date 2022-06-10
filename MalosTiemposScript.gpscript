@@ -897,6 +897,11 @@ function startAllProcesses(new_var: integer)
     SetWidgetValue(guitar_background_number_2, 0)
     checkPlayerTracks()
     setMidiFileLabel()
+    if GetWidgetValue(midi_player_track) > 0 then 
+        SetPluginBypassed(MidiFilePlayer, false) 
+    else 
+        SetPluginBypassed(MidiFilePlayer, true) 
+    end 
     
     if song_name == "Electroshock" then
         SetWidgetLabel(special_label_1, "stop chords octave on")
