@@ -1,0 +1,10 @@
+var Equalizer, EqualizerB: widget
+
+On WidgetValueChanged (newValue : Double) from Equalizer
+    var reversed_value: Integer = 1
+    
+    If newValue == 1 Then
+        reversed_value = 0
+    End
+    SetWidgetValue(EqualizerB, reversed_value)
+End
