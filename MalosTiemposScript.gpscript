@@ -75,6 +75,7 @@ var guitar_chorus_rate_array: widget array = [guitar_chorus_rate_1, guitar_choru
 
 var guitar_volume_1, guitar_volume_2: widget
 var guitar_volume_array: widget array = [guitar_volume_1, guitar_volume_2]
+var guitar_with_midi: widget
 
 var guitar_preset_button, selected_guitar_preset: widget
 var guitar_background_1, guitar_background_2, guitar_background_number_1, guitar_background_number_2: widget
@@ -94,7 +95,7 @@ var midi_channel, midi_volume: widget
 var audio_track_length: integer = 20
 var midi_track_length: integer = 20
 var knob_widget_array: widget array = [play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_midi_channel_1, guitar_midi_channel_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel]
-var knob_widget_label_array: string array = ["track", "track", "track", "sec", "sec", "channel", "channel", "preset", "preset", "sec", "sec", "ch"]
+var knob_widget_label_array: string array = ["tr", "tr", "tr", "sec", "sec", "ch", "ch", "preset", "preset", "sec", "sec", "ch"]
 var knob_widget_led_array: widget array = [player_1_led, player_2_led, button_filter_16, player_length_led_1, player_length_led_2, guitar_midi_button_1, guitar_midi_button_2, guitar_amp_button_1, guitar_amp_button_2, beat_A_led_1, beat_A_led_2, button_filter_4]
 var knob_widget_range_array: integer array = [audio_track_length, audio_track_length, midi_track_length, 100, 100, 10, 10, 10, 10, 100, 100, 10]
 var knob_widget_led_on_array: double array = [0.6, 0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
@@ -155,6 +156,7 @@ var panel_letter_off_value: double = 0.5
 var panel_letter_songs: string array = ["Intro", "Terrenal", "Rufita", "Como una reggaedera", "Rita", "Electroshock", "Another way around"]
 var panel_letter_labels: string array = ["A", "ABACABACA", "BABA", "AA", "ABCA", "AAA", "ABACCBA"]
 var letter_array: string array
+var pedal_margin_range: integer = 4
 
 function indexOfStringArray(text: string array, search: string) returns integer
     var x: integer
@@ -856,6 +858,18 @@ function startMidiPlayer()
     SetWidgetValue(button_D, 1)
 end
 
+function setInstrumentFromPedal(value: integer)
+    if value > 127 - pedal_margin_range then
+        switchButtonOn(guitar_button)
+    elsif value > pedal_margin_range then
+        switchButtonOff(octave_button)
+        switchButtonOff(guitar_button)
+        switchButtonOn(bass_button)
+    else
+        switchButtonOn(octave_button)
+    end
+end
+
 function startAllProcesses(new_var: integer)
     var default_preset: string = "1"
     var x: integer
@@ -924,11 +938,7 @@ function startAllProcesses(new_var: integer)
         SetWidgetLabel(special_label_1, "stop chords octave on")
         SetWidgetLabel(special_label_2, "MIDI")
         SetWidgetValue(button_filter_2, filter_on_value)
-        bpm = 89.0
-    elsif song_name == "Luces y sombras" then
-        SetWidgetLabel(special_label_1, "guitar and MIDI")
-        SetWidgetLabel(special_label_2, "MIDI")
-        SetWidgetValue(button_filter_2, filter_on_value)
+        bpm = 90.0
     else
         SetWidgetLabel(special_label_1, "")
         SetWidgetLabel(special_label_2, "MIDI")
@@ -988,10 +998,16 @@ on WidgetValueChanged (newValue : Double) from guitar_button
         if newValue == 1 then
             setOctaveOff()
             switchGuitarOn()
+            if GetWidgetValue(midi_channel) > 0 and GetWidgetValue(guitar_with_midi) == 1 then
+                switchButtonOn(special_button_2)
+            end
             SetWidgetValue(bass_button, 0)
         elsif GetWidgetValue(octave_button) == 0 then
             SetWidgetValue(bass_button, 1)
             switchGuitarOff()
+            if GetWidgetValue(midi_channel) > 0 and GetWidgetValue(guitar_with_midi) == 1 then
+                switchButtonOff(special_button_2)
+            end
         end
     end
 end
@@ -1091,6 +1107,14 @@ on WidgetValueChanged (newValue : Double) from midi_file_playing
     end
 end
 
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From TSMIDI_IZDA
+    setInstrumentFromPedal(GetCCValue(cc))
+end
+
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From TSMIDI_DCHA
+    setInstrumentFromPedal(GetCCValue(cc))
+end
+
 on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..22] From TSMIDI_IZDA
     var CC_number : Integer = GetCCNumber(cc)
 
@@ -1123,15 +1147,6 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
             switchDelayedWidgetOn(special_button_1)
             switchDelayedWidgetOn(reset_button)
             switchButtonOn(octave_button)
-        elsif song_name == "Luces y sombras" then
-            if GetWidgetValue(special_button_1) == 1 then
-                switchButtonOff(guitar_button)
-                switchButtonOff(special_button_2)
-            else
-                switchButtonOn(guitar_button)
-                switchButtonOn(special_button_2)
-            end
-            switchButton(special_button_1)
         end
     end
     if CC_number == 27 then
