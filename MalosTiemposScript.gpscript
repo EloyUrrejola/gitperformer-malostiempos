@@ -1,4 +1,4 @@
-var TSMIDI_DCHA : MidiInBlock
+var TSMIDI_IZDA, TSMIDI_DCHA, MidiGuitarBlock : MidiInBlock
 var SongPlayer, SongPlayer2, SongPlayer3, SongPlayer4, SongPlayer5, SongPlayer6, SongPlayer7, SongPlayer8, SongPlayer9, SongPlayer10, SongPlayer11, SongPlayer12: PluginBlock
 var song_player_array: PluginBlock array = [SongPlayer, SongPlayer2, SongPlayer3, SongPlayer4, SongPlayer5, SongPlayer6, SongPlayer7, SongPlayer8, SongPlayer9, SongPlayer10, SongPlayer11, SongPlayer12]
 var MidiFilePlayer: PluginBlock
@@ -18,7 +18,6 @@ var button_play_array: widget array = [button_play_1, button_play_2]
 var button_filter_2, button_filter_4, button_filter_9, button_filter_10, button_filter_13, button_filter_14, button_filter_15, button_filter_16: widget
 var button_filter_array: widget array = [button_filter_13, button_filter_14, button_filter_15, button_filter_16]
 
-var TSMIDI_IZDA : MidiInBlock
 var bass_button, octave_button, guitar_button, octave_amount: widget
 var bass_cc: Integer = 20
 var octave_cc: Integer = 21
@@ -28,6 +27,7 @@ var guitar_plugins: PluginBlock array = [GuitarPitch1, GuitarPitch2, GuitarAmp, 
 var guitar_pitch_array: PluginBlock array = [GuitarPitch1, GuitarPitch2]
 var octave_pitch_select, guitar_pitch_select_1, guitar_pitch_select_2: widget
 var guitar_pitch_select_array: widget array = [guitar_pitch_select_1, guitar_pitch_select_2]
+var midi_instrument_velocity, guitar_midi_effect: widget
 
 var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amount, octave_reverb_length: widget
 
@@ -1057,6 +1057,18 @@ on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from block_b
     end
 end
 
+on NoteOnEvent (m : NoteMessage) From MidiGuitarBlock
+    var effect: double = GetWidgetValue(guitar_midi_effect)
+    var velocity: double = GetVelocity(m)
+    var volume: double
+    var distance: double
+    var initial_volume: double = GetWidgetValue(midi_volume) * 127
+
+    distance = velocity - initial_volume
+    volume = (initial_volume + (distance * effect)) / 127
+    SetWidgetValue(midi_instrument_velocity, volume)
+end
+
 on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..27] From TSMIDI_DCHA
     var CC_number : Integer
     var player_index, chord_player_index: integer
@@ -1221,7 +1233,6 @@ on BeatChanged(bar : integer, beat : integer)
     var playing : integer
     var x: integer
     var max_time: integer
-    var fader_value: double
 
     for x=0; x<Size(button_play_array); x=x+1 do
         if GetWidgetValue(button_play_array[x]) == 1 then
