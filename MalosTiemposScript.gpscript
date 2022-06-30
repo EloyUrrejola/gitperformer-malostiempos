@@ -50,14 +50,11 @@ var player_length_1, player_length_2, player_length_led_1, player_length_led_2: 
 var player_length_array: widget array = [player_length_1, player_length_2]
 var reset_button, stop_button: widget
 
-var guitar_chorus_button_1, guitar_delay_button_1, guitar_amp_button_1, guitar_reverb_button_1: widget
+var guitar_delay_button_1, guitar_amp_button_1, guitar_reverb_button_1: widget
 var guitar_delay_time_1, guitar_delay_feedback_1, guitar_delay_mix_1, guitar_amp_preset_1, guitar_reverb_amount_1, guitar_reverb_length_1: widget
-var guitar_chorus_delay_1, guitar_chorus_depth_1, guitar_chorus_rate_1: widget
-var guitar_chorus_button_2, guitar_delay_button_2, guitar_amp_button_2, guitar_reverb_button_2: widget
+var guitar_delay_button_2, guitar_amp_button_2, guitar_reverb_button_2: widget
 var guitar_delay_time_2, guitar_delay_feedback_2, guitar_delay_mix_2, guitar_amp_preset_2, guitar_reverb_amount_2, guitar_reverb_length_2: widget
-var guitar_chorus_delay_2, guitar_chorus_depth_2, guitar_chorus_rate_2: widget
 
-var guitar_chorus_button_array: widget array = [guitar_chorus_button_1, guitar_chorus_button_2]
 var guitar_delay_button_array: widget array = [guitar_delay_button_1, guitar_delay_button_2]
 var guitar_amp_button_array: widget array = [guitar_amp_button_1, guitar_amp_button_2]
 var guitar_reverb_button_array: widget array = [guitar_reverb_button_1, guitar_reverb_button_2]
@@ -67,9 +64,6 @@ var guitar_delay_mix_array: widget array = [guitar_delay_mix_1, guitar_delay_mix
 var guitar_amp_preset_array: widget array = [guitar_amp_preset_1, guitar_amp_preset_2]
 var guitar_reverb_amount_array: widget array = [guitar_reverb_amount_1, guitar_reverb_amount_2]
 var guitar_reverb_length_array: widget array = [guitar_reverb_length_1, guitar_reverb_length_2]
-var guitar_chorus_delay_array: widget array = [guitar_chorus_delay_1, guitar_chorus_delay_2]
-var guitar_chorus_depth_array: widget array = [guitar_chorus_depth_1, guitar_chorus_depth_2]
-var guitar_chorus_rate_array: widget array = [guitar_chorus_rate_1, guitar_chorus_rate_2]
 
 var guitar_volume_1, guitar_volume_2: widget
 var guitar_volume_array: widget array = [guitar_volume_1, guitar_volume_2]
@@ -658,15 +652,6 @@ function setGuitarPreset(guitar_preset: integer)
     else
         SetPluginBypassed(GuitarAmp, true)
     end
-    
-    /*if GetWidgetValue(guitar_chorus_button_array[guitar_preset]) == 1 then
-        SetPluginBypassed(GuitarChorus, false)
-        SetParameter(GuitarChorus, 4, GetWidgetValue(guitar_chorus_delay_array[guitar_preset]))
-        SetParameter(GuitarChorus, 5, GetWidgetValue(guitar_chorus_depth_array[guitar_preset]))
-        SetParameter(GuitarChorus, 6, GetWidgetValue(guitar_chorus_rate_array[guitar_preset]))
-    else
-        SetPluginBypassed(GuitarChorus, true)
-    end*/
     
     if GetWidgetValue(guitar_delay_button_array[guitar_preset]) == 1 then
         SetPluginBypassed(GuitarDelay, false)
