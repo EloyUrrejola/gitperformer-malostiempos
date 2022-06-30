@@ -22,11 +22,8 @@ var bass_button, octave_button, guitar_button, octave_amount: widget
 var bass_cc: Integer = 20
 var octave_cc: Integer = 21
 var guitar_cc: Integer = 22
-var GuitarGain, GuitarPitch1, GuitarPitch2, GuitarAmp, GuitarDelay, GuitarReverb, GuitarMidi, MIDIGuitarChannel: PluginBlock
-var guitar_plugins: PluginBlock array = [GuitarPitch1, GuitarPitch2, GuitarAmp, GuitarDelay, GuitarReverb]
-var guitar_pitch_array: PluginBlock array = [GuitarPitch1, GuitarPitch2]
-var octave_pitch_select, guitar_pitch_select_1, guitar_pitch_select_2: widget
-var guitar_pitch_select_array: widget array = [guitar_pitch_select_1, guitar_pitch_select_2]
+var GuitarGain, GuitarPitch, GuitarAmp, GuitarDelay, GuitarReverb, GuitarMidi, MIDIGuitarChannel: PluginBlock
+var guitar_plugins: PluginBlock array = [GuitarPitch, GuitarAmp, GuitarDelay, GuitarReverb]
 var midi_instrument_velocity, guitar_midi_effect: widget
 
 var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amount, octave_reverb_length: widget
@@ -640,11 +637,6 @@ function sendGuitarAmpPreset(preset_value: Double)
 end
 
 function setGuitarPreset(guitar_preset: integer)
-    var pitch_select: double = Round(GetWidgetValue(guitar_pitch_select_array[guitar_preset]))
-
-    SetPluginBypassed(guitar_pitch_array[0], pitch_select == 1)
-    SetPluginBypassed(guitar_pitch_array[1], pitch_select == 0)
-    
     SetParameter(GuitarGain, 0, GetWidgetValue(guitar_volume_array[guitar_preset]))
     if GetWidgetValue(guitar_amp_button_array[guitar_preset]) == 1 then
         SetPluginBypassed(GuitarAmp, false)
@@ -710,8 +702,6 @@ function switchGuitarOff()
 end
 
 function switchOctaveOn()
-    var pitch_select: double = GetWidgetValue(octave_pitch_select)
-    
     if GetWidgetValue(block_bass_reverb) == 0 then
         if GetWidgetValue(auto_bass_reverb) == 1 And GetWidgetValue(bass_reverb_button) == 1 then
             bass_reverb_saved = true
@@ -721,8 +711,7 @@ function switchOctaveOn()
     SetParameter(GuitarGain, 0, GetWidgetValue(octave_amount))
     SetParameter(GuitarGain, 1, 0)
     
-    SetPluginBypassed(guitar_pitch_array[0], pitch_select == 1)
-    SetPluginBypassed(guitar_pitch_array[1], pitch_select == 0)
+    SetPluginBypassed(GuitarPitch, false)
     
     SetParameter(GuitarReverb, 3, GetWidgetValue(octave_reverb_amount))
     SetParameter(GuitarReverb, 1, GetWidgetValue(octave_reverb_length))
