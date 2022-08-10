@@ -71,6 +71,8 @@ var guitar_background_1, guitar_background_2, guitar_background_number_1, guitar
 var guitar_background_array: widget array = [guitar_background_1, guitar_background_2]
 var guitar_background_number_array: widget array = [guitar_background_number_1, guitar_background_number_2]
 
+var foot_pedal: widget
+
 var chord_name_1, chord_name_2, chord_name_3, chord_name_4: widget
 var chord_name_array: widget array = [chord_name_1, chord_name_2, chord_name_3, chord_name_4]
 
@@ -729,6 +731,7 @@ end
 
 function switchGuitarOn()
     SetParameter(GuitarGain, 1, 0)
+    SetPluginBypassed(GuitarPitch, false) 
     setGuitarPreset(StringToInt(GetWidgetLabel(selected_guitar_preset)) - 1)
 end
 
@@ -831,14 +834,16 @@ function startMidiPlayer()
 end
 
 function setInstrumentFromPedal(value: integer)
-    if value > 127 - pedal_margin_range then
-        switchButtonOn(guitar_button)
-    elsif value > pedal_margin_range then
-        switchButtonOff(octave_button)
-        switchButtonOff(guitar_button)
-        switchButtonOn(bass_button)
-    else
-        switchButtonOn(octave_button)
+    if events_allowed then
+        if value > 127 - pedal_margin_range then
+            switchButtonOn(guitar_button)
+        elsif value > pedal_margin_range then
+            switchButtonOff(octave_button)
+            switchButtonOff(guitar_button)
+            switchButtonOn(bass_button)
+        else
+            switchButtonOn(octave_button)
+        end
     end
 end
 
@@ -876,6 +881,7 @@ function startAllProcesses(new_var: integer)
     // fin bypass
     
     if GetWidgetValue(guitar_button) == 1 then
+        SetPluginBypassed(GuitarPitch, false) 
         setGuitarPreset(StringToInt(default_preset) - 1)
     else
         switchGuitarOff()
@@ -1088,13 +1094,15 @@ on WidgetValueChanged (newValue : Double) from midi_file_playing
     end
 end
 
-on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From TSMIDI_IZDA
-    setInstrumentFromPedal(GetCCValue(cc))
+//on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From TSMIDI_IZDA
+on WidgetValueChanged (newValue: double) from foot_pedal
+    var ccValue: integer = Round(newValue * 127)
+    setInstrumentFromPedal(ccValue)
 end
 
-on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From TSMIDI_DCHA
+/*on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From TSMIDI_DCHA
     setInstrumentFromPedal(GetCCValue(cc))
-end
+end*/
 
 on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..22] From TSMIDI_IZDA
     var CC_number : Integer = GetCCNumber(cc)
