@@ -9,6 +9,9 @@ var cycle_array: widget array = [cycle_1, cycle_2, cycle_3, cycle_4]
 var chord_root_1, chord_root_2, chord_root_3, chord_root_4: widget
 var chord_root_array: widget array = [chord_root_1, chord_root_2, chord_root_3, chord_root_4]
 
+var output_volume_1, output_volume_2, output_volume_3, output_volume_4, use_pedal_as_volume: widget
+var output_volume_array: widget array = [output_volume_1, output_volume_2, output_volume_3, output_volume_4]
+
 var button_A, button_B, button_C, button_D: widget
 var button_letter_array: widget array = [button_A, button_B, button_C, button_D]
 
@@ -833,7 +836,9 @@ function startMidiPlayer()
     SetWidgetValue(button_D, 1)
 end
 
-function setInstrumentFromPedal(value: integer)
+function setInstrumentFromPedal(newValue: double)
+    var value: integer = Round(newValue * 127)
+    
     if events_allowed then
         if value > 127 - pedal_margin_range then
             switchButtonOn(guitar_button)
@@ -844,6 +849,16 @@ function setInstrumentFromPedal(value: integer)
         else
             switchButtonOn(octave_button)
         end
+    end
+end
+
+function setOutputVolumes(newValue: double)
+    var index: integer
+    var value: double
+    
+    value = newValue * 70.7 / 100
+    for index = 0; index < Size(output_volume_array); index = index + 1 do
+        SetWidgetValue(output_volume_array[index], value)
     end
 end
 
@@ -1094,10 +1109,12 @@ on WidgetValueChanged (newValue : Double) from midi_file_playing
     end
 end
 
-//on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From TSMIDI_IZDA
 on WidgetValueChanged (newValue: double) from foot_pedal
-    var ccValue: integer = Round(newValue * 127)
-    setInstrumentFromPedal(ccValue)
+    if GetWidgetValue(use_pedal_as_volume) == 1 then
+        setOutputVolumes(newValue)
+    else
+        setInstrumentFromPedal(newValue)
+    end
 end
 
 /*on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From TSMIDI_DCHA
