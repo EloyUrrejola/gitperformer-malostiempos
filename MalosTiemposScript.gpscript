@@ -703,7 +703,7 @@ end
 
 function switchGuitarOff()
     SetParameter(GuitarGain, 1, 1)
-    switchGuitarPluginsOff()
+    //switchGuitarPluginsOff()
 end
 
 function switchOctaveOn()
@@ -725,7 +725,7 @@ end
 
 function switchOctaveOff()
     SetParameter(GuitarGain, 1, 1)
-    switchGuitarPluginsOff()
+    //switchGuitarPluginsOff()
     if bass_reverb_saved then
         SetWidgetValue(bass_reverb_button, 1)
         bass_reverb_saved = false
