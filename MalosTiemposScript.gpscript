@@ -3,7 +3,7 @@ var SongPlayer, SongPlayer2, SongPlayer3, SongPlayer4, SongPlayer5, SongPlayer6,
 var song_player_array: PluginBlock array = [SongPlayer, SongPlayer2, SongPlayer3, SongPlayer4, SongPlayer5, SongPlayer6, SongPlayer7, SongPlayer8, SongPlayer9, SongPlayer10, SongPlayer11, SongPlayer12]
 var MidiFilePlayer: PluginBlock
 var OmnisphereInstrument: PluginBlock
-var BassGuitarMixer, AudioPlayerMixer: PluginBlock
+var BassGuitarMixer, AudioPlayerMixer, MTuner: PluginBlock
 var cycle_1, cycle_2, cycle_3, cycle_4: widget
 var cycle_array: widget array = [cycle_1, cycle_2, cycle_3, cycle_4]
 var chord_root_1, chord_root_2, chord_root_3, chord_root_4: widget
@@ -21,7 +21,7 @@ var button_play_array: widget array = [button_play_1, button_play_2]
 var button_filter_2, button_filter_4, button_filter_9, button_filter_10, button_filter_13, button_filter_14, button_filter_15, button_filter_16: widget
 var button_filter_array: widget array = [button_filter_13, button_filter_14, button_filter_15, button_filter_16]
 
-var bass_button, octave_button, guitar_button, octave_amount: widget
+var tuner_button, bass_button, octave_button, guitar_button, octave_amount: widget
 var bass_cc: Integer = 20
 var octave_cc: Integer = 21
 var guitar_cc: Integer = 22
@@ -715,6 +715,7 @@ function switchOctaveOn()
     end
     SetParameter(GuitarGain, 0, GetWidgetValue(octave_amount))
     SetParameter(GuitarGain, 1, 0)
+    SetPluginBypassed(GuitarAmp, true)
     
     SetPluginBypassed(GuitarPitch, false)
     
@@ -1130,6 +1131,17 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..22] From TSMIDI_
         switchButton(octave_button)
     elsif CC_number == guitar_cc then
         switchButton(guitar_button)
+    end
+end
+
+on ControlChangeEvent (cc: ControlChangeMessage) Matching 24 From TSMIDI_IZDA
+    if GetWidgetValue(tuner_button) == 0 then
+        OpenPlugin(MTuner)
+        SetPluginEditorXYPosition(MTuner, 0, 0)
+        SetWidgetValue(tuner_button, 1)
+    else
+        ClosePlugin(MTuner)
+        SetWidgetValue(tuner_button, 0)
     end
 end
 
