@@ -27,7 +27,7 @@ var octave_cc: Integer = 21
 var guitar_cc: Integer = 22
 var tuner_cc: Integer = 24
 var GuitarGain, GuitarPitch, GuitarAmp, GuitarDelay, GuitarReverb, GuitarMidi, MIDIGuitarChannel: PluginBlock
-var guitar_plugins: PluginBlock array = [GuitarPitch, GuitarAmp, GuitarDelay, GuitarReverb]
+var guitar_plugins_to_bypass: PluginBlock array = [GuitarPitch]
 var midi_instrument_velocity, guitar_midi_effect: widget
 
 var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amount, octave_reverb_length: widget
@@ -672,8 +672,8 @@ end
 function switchGuitarPluginsOff()
     var x: integer
     
-    for x=0; x<Size(guitar_plugins); x=x+1 do
-        SetPluginBypassed(guitar_plugins[x], true)
+    for x=0; x<Size(guitar_plugins_to_bypass); x=x+1 do
+        SetPluginBypassed(guitar_plugins_to_bypass[x], true)
     end
 end
 
@@ -704,7 +704,7 @@ end
 
 function switchGuitarOff()
     SetParameter(GuitarGain, 1, 1)
-    //switchGuitarPluginsOff()
+    switchGuitarPluginsOff()
 end
 
 function switchOctaveOn()
@@ -727,7 +727,7 @@ end
 
 function switchOctaveOff()
     SetParameter(GuitarGain, 1, 1)
-    //switchGuitarPluginsOff()
+    switchGuitarPluginsOff()
     if bass_reverb_saved then
         SetWidgetValue(bass_reverb_button, 1)
         bass_reverb_saved = false
