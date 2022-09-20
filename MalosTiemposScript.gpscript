@@ -25,6 +25,7 @@ var tuner_button, bass_button, octave_button, guitar_button, octave_amount: widg
 var bass_cc: Integer = 20
 var octave_cc: Integer = 21
 var guitar_cc: Integer = 22
+var tuner_cc: Integer = 24
 var GuitarGain, GuitarPitch, GuitarAmp, GuitarDelay, GuitarReverb, GuitarMidi, MIDIGuitarChannel: PluginBlock
 var guitar_plugins: PluginBlock array = [GuitarPitch, GuitarAmp, GuitarDelay, GuitarReverb]
 var midi_instrument_velocity, guitar_midi_effect: widget
@@ -966,6 +967,15 @@ on WidgetValueChanged (w: Widget, button_index: Integer, newValue : Double) from
     end
 end
 
+on WidgetValueChanged (newValue: Double) From tuner_button
+    if newValue == 1 then
+        OpenPlugin(MTuner)
+        SetPluginEditorXYPosition(MTuner, 0, 0)
+    else
+        ClosePlugin(MTuner)
+    end
+end
+
 on WidgetValueChanged (newValue : Double) from bass_button
     if newValue == 0 then
         if GetWidgetValue(octave_button) == 1 then
@@ -1122,7 +1132,7 @@ end
     setInstrumentFromPedal(GetCCValue(cc))
 end*/
 
-on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..22] From TSMIDI_IZDA
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 20,21,22,24 From TSMIDI_IZDA
     var CC_number : Integer = GetCCNumber(cc)
 
     if CC_number == bass_cc then
@@ -1131,17 +1141,8 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..22] From TSMIDI_
         switchButton(octave_button)
     elsif CC_number == guitar_cc then
         switchButton(guitar_button)
-    end
-end
-
-on ControlChangeEvent (cc: ControlChangeMessage) Matching 24 From TSMIDI_IZDA
-    if GetWidgetValue(tuner_button) == 0 then
-        OpenPlugin(MTuner)
-        SetPluginEditorXYPosition(MTuner, 0, 0)
-        SetWidgetValue(tuner_button, 1)
-    else
-        ClosePlugin(MTuner)
-        SetWidgetValue(tuner_button, 0)
+    elsif CC_number == tuner_cc then
+        switchButton(tuner_button)
     end
 end
 
