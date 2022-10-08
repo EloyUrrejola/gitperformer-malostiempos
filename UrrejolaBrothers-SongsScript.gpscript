@@ -186,9 +186,19 @@ function setChordLetterValues(number_of_tracks: integer)
     SetWidgetValue(button_filter_9, reset_value)
 end
 
+function getSongNameFromVariationName(variation_name: string) returns string
+    var song_name: string
+    
+    song_name = StringUpToFirstOccurrence(variation_name, " - ", false, false)
+    result = song_name
+end
+
 function loadMidiFile()
+    var variation_name: string
+    
     number_of_tracks = 0
-    song_name = GetVariationName(GetCurrentVariation())
+    variation_name = GetVariationName(GetCurrentVariation())
+    song_name = getSongNameFromVariationName(variation_name)
     midi_file_name = directory + ReplaceString(song_name, " ", "_", false) + ".mid"
     if FileExists(midi_file_name) then
         number_of_tracks = MidiSequence_LoadMidiFile(midi_sequence, midi_file_name)
@@ -847,6 +857,21 @@ function startMidiPlayer()
     SetWidgetValue(button_D, 1)
 end
 
+function setMidiInstrument(newValue: double)
+Print(newValue)
+    if GetWidgetValue(midi_channel) > 0 and newValue == 1 then
+        SetPluginBypassed(GuitarMidi, false)
+        SetPluginBypassed(OmnisphereInstrument, false)
+        SetParameter(MIDIGuitarChannel, 1, (GetWidgetValue(midi_channel) * 10 - 1) / 15)
+        OpenPlugin(GuitarMidi)
+        SetPluginEditorXYPosition(GuitarMidi, 0, 500)
+    else
+        SetPluginBypassed(GuitarMidi, true)
+        SetPluginBypassed(OmnisphereInstrument, true)
+        ClosePlugin(GuitarMidi)
+    end
+end
+
 function setInstrumentFromPedal(newValue: double)
     var value: integer = Round(newValue * 127)
     
@@ -873,11 +898,12 @@ function setOutputVolumes(newValue: double)
     end
 end
 
-function startAllProcesses(new_variation: string)
+function startAllProcesses(new_var: int)
     var default_preset: string = "1"
     var x: integer
     var tracks: integer array
     var bypassed: boolean
+    var new_variation: string
 
     if GetWidgetValue(guitar_preset_value) == 1 then
         default_preset = "2"
@@ -885,12 +911,17 @@ function startAllProcesses(new_variation: string)
     
     SetTimersRunning(true);
 
+    loadMidiFile()
+    new_variation = IntToString(new_var)
+    if InSetlistMode() then
+        new_variation = song_name + "-" + IntToString(GetCurrentSongPart())
+    end
     last_variation = current_variation
     current_variation = new_variation
+
     bass_reverb_saved = false
     chord_player_triggered = -1
 
-    loadMidiFile()
     stopPlayer()
     resetPanelChords()
     getPanelLetters()
@@ -940,39 +971,27 @@ function startAllProcesses(new_variation: string)
     else 
         SetPluginBypassed(MidiFilePlayer, true) 
     end 
-    
-    if song_name == "Rita" then
-        SetWidgetLabel(special_label_1, "stop chords and reverb off")
-        SetWidgetLabel(special_label_2, "MIDI")
-        SetWidgetValue(button_filter_2, filter_on_value)
-        SetWidgetValue(button_filter_4, filter_off_value)
-    elsif song_name == "Another way around" then
-        SetWidgetLabel(special_label_1, "stop chords octave on")
-        SetWidgetLabel(special_label_2, "MIDI")
-        SetWidgetValue(button_filter_2, filter_on_value)
-    else
-        SetWidgetLabel(special_label_1, "")
-        SetWidgetLabel(special_label_2, "MIDI")
-    end
 
-    if current_variation == "15_5" then
+    if current_variation == "Electroshock-5" then
         // Final Electroshck audio
         switchButtonOn(button_play_2)
+    end
+    if current_variation == "Another way around-1" or current_variation == "Another way around-3" then
+        // Another - reset & octave
+        switchDelayedWidgetOn(reset_button)
+    end
+    if current_variation == "Rita-1" or current_variation == "Rita-3" then
+        // Rita - reset
+        switchDelayedWidgetOn(reset_button)
     end
 end
 
 // ================ EVENTS ================
 
 on Variation (old_var : Int, new_var : Int)
-    var new_variation: string
-
     events_allowed = false
     variation_time = TimeSinceStartup()
-    new_variation = IntToString(new_var)
-    if InSetlistMode() then
-        new_variation = new_variation + "_" + IntToString(GetCurrentSongPart())
-    end
-    startAllProcesses(new_variation)
+    startAllProcesses(new_var)
 end
 
 on WidgetValueChanged (newValue : Double) from select_bass
@@ -1043,21 +1062,7 @@ on WidgetValueChanged (newValue : Double) from guitar_button
 end
 
 on WidgetValueChanged (newValue : Double) from special_button_2
-    if GetWidgetValue(midi_channel) > 0 then
-        if newValue == 1 then
-            SetPluginBypassed(GuitarMidi, false)
-            SetPluginBypassed(OmnisphereInstrument, false)
-            SetParameter(MIDIGuitarChannel, 1, (GetWidgetValue(midi_channel) * 10 - 1) / 15)
-            OpenPlugin(GuitarMidi)
-            SetPluginEditorXYPosition(GuitarMidi, 0, 500)
-        else
-            SetPluginBypassed(GuitarMidi, true)
-            SetPluginBypassed(OmnisphereInstrument, true)
-            ClosePlugin(GuitarMidi)
-        end
-    else
-        ClosePlugin(GuitarMidi)
-    end
+    setMidiInstrument(newValue)
 end
 
 on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
@@ -1186,21 +1191,8 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
 
     CC_number = GetCCNumber(cc)
 
-    if CC_number == 25 then
-        if song_name == "Rita" then
-            switchDelayedWidgetOn(special_button_1)
-            switchDelayedWidgetOn(reset_button)
-            switchButtonOff(bass_reverb_button)
-        elsif song_name == "Another way around" then
-            switchDelayedWidgetOn(special_button_1)
-            switchDelayedWidgetOn(reset_button)
-            switchButtonOn(octave_button)
-        end
-    end
     if CC_number == 27 then
-        if song_name == "Another way around" then
-            Tap()
-        elsif GetWidgetValue(midi_channel) > 0 then
+        if GetWidgetValue(midi_channel) > 0 then
             // MIDI
             switchButton(special_button_2)
         end
@@ -1210,13 +1202,15 @@ end
 on ControlChangeEvent (cc : ControlChangeMessage) Matching 28 From MidiPipe
     var part_midi_value: integer
 
+    if InSetlistMode() then
     part_midi_value = GetCCValue(cc)
-    if (part_midi_value < current_midi_part_value and (part_midi_value <> 0 or current_midi_part_value <> 120)) or (part_midi_value == 120 and current_midi_part_value == 0) then
-        SongNextPart()
-    elsif part_midi_value > current_midi_part_value or (part_midi_value == 0 and current_midi_part_value == 120) then
-        SongPrevPart()
+        if (part_midi_value < current_midi_part_value and (part_midi_value <> 0 or current_midi_part_value <> 120)) or (part_midi_value == 120 and current_midi_part_value == 0) then
+            SongNextPart()
+        elsif part_midi_value > current_midi_part_value or (part_midi_value == 0 and current_midi_part_value == 120) then
+            SongPrevPart()
+        end
+        current_midi_part_value = part_midi_value
     end
-    current_midi_part_value = part_midi_value
 end
 
 on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel
