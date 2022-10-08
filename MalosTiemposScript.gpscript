@@ -838,6 +838,21 @@ function startMidiPlayer()
     SetWidgetValue(button_D, 1)
 end
 
+function setMidiInstrument(newValue: double)
+Print(newValue)
+    if GetWidgetValue(midi_channel) > 0 and newValue == 1 then
+        SetPluginBypassed(GuitarMidi, false)
+        SetPluginBypassed(OmnisphereInstrument, false)
+        SetParameter(MIDIGuitarChannel, 1, (GetWidgetValue(midi_channel) * 10 - 1) / 15)
+        OpenPlugin(GuitarMidi)
+        SetPluginEditorXYPosition(GuitarMidi, 0, 500)
+    else
+        SetPluginBypassed(GuitarMidi, true)
+        SetPluginBypassed(OmnisphereInstrument, true)
+        ClosePlugin(GuitarMidi)
+    end
+end
+
 function setInstrumentFromPedal(newValue: double)
     var value: integer = Round(newValue * 127)
     
@@ -894,8 +909,10 @@ function startAllProcesses(new_var: integer)
         end
         SetPluginBypassed(song_player_array[x], bypassed)
     end
-    SetPluginBypassed(OmnisphereInstrument, true)
     // fin bypass
+
+    setMidiInstrument(GetWidgetValue(special_button_2))
+    //SetPluginBypassed(OmnisphereInstrument, true)
     
     if GetWidgetValue(guitar_button) == 1 then
         SetPluginBypassed(GuitarPitch, false) 
@@ -1014,21 +1031,7 @@ on WidgetValueChanged (newValue : Double) from guitar_button
 end
 
 on WidgetValueChanged (newValue : Double) from special_button_2
-    if GetWidgetValue(midi_channel) > 0 then
-        if newValue == 1 then
-            SetPluginBypassed(GuitarMidi, false)
-            SetPluginBypassed(OmnisphereInstrument, false)
-            SetParameter(MIDIGuitarChannel, 1, (GetWidgetValue(midi_channel) * 10 - 1) / 15)
-            OpenPlugin(GuitarMidi)
-            SetPluginEditorXYPosition(GuitarMidi, 0, 500)
-        else
-            SetPluginBypassed(GuitarMidi, true)
-            SetPluginBypassed(OmnisphereInstrument, true)
-            ClosePlugin(GuitarMidi)
-        end
-    else
-        ClosePlugin(GuitarMidi)
-    end
+    setMidiInstrument(newValue)
 end
 
 on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
