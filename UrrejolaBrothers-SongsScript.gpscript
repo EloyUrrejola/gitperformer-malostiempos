@@ -858,17 +858,16 @@ function startMidiPlayer()
 end
 
 function setMidiInstrument(newValue: double)
-Print(newValue)
     if GetWidgetValue(midi_channel) > 0 and newValue == 1 then
         SetPluginBypassed(GuitarMidi, false)
         SetPluginBypassed(OmnisphereInstrument, false)
         SetParameter(MIDIGuitarChannel, 1, (GetWidgetValue(midi_channel) * 10 - 1) / 15)
-        OpenPlugin(GuitarMidi)
-        SetPluginEditorXYPosition(GuitarMidi, 0, 500)
+        //OpenPlugin(GuitarMidi)
+        //SetPluginEditorXYPosition(GuitarMidi, 0, 500)
     else
         SetPluginBypassed(GuitarMidi, true)
         SetPluginBypassed(OmnisphereInstrument, true)
-        ClosePlugin(GuitarMidi)
+        //ClosePlugin(GuitarMidi)
     end
 end
 
@@ -939,12 +938,12 @@ function startAllProcesses(new_var: int)
         end
         SetPluginBypassed(song_player_array[x], bypassed)
     end
-    SetPluginBypassed(OmnisphereInstrument, true)
     // fin bypass
     
     if GetWidgetValue(guitar_button) == 1 then
-        SetPluginBypassed(GuitarPitch, false) 
-        setGuitarPreset(StringToInt(default_preset) - 1)
+        switchGuitarOn()
+        //SetPluginBypassed(GuitarPitch, false) 
+        //setGuitarPreset(StringToInt(default_preset) - 1)
     else
         switchGuitarOff()
     end
@@ -1058,6 +1057,15 @@ on WidgetValueChanged (newValue : Double) from guitar_button
                 switchButtonOff(special_button_2)
             end
         end
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from special_button_1
+    if newValue == 1 then
+        OpenPlugin(GuitarMidi)
+        SetPluginEditorXYPosition(GuitarMidi, 0, 200)
+    else
+        ClosePlugin(GuitarMidi)
     end
 end
 
@@ -1190,6 +1198,10 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
     var player_index: integer
 
     CC_number = GetCCNumber(cc)
+
+    if CC_number == 25 then
+        switchButton(special_button_1)
+    end
 
     if CC_number == 27 then
         if GetWidgetValue(midi_channel) > 0 then
