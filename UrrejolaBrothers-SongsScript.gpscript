@@ -75,7 +75,7 @@ var guitar_background_1, guitar_background_2, guitar_background_number_1, guitar
 var guitar_background_array: widget array = [guitar_background_1, guitar_background_2]
 var guitar_background_number_array: widget array = [guitar_background_number_1, guitar_background_number_2]
 
-var foot_pedal, foot_pedal_switch: widget
+var foot_pedal, foot_pedal_switch, foot_pedal_filter: widget
 
 var chord_name_1, chord_name_2, chord_name_3, chord_name_4: widget
 var chord_name_array: widget array = [chord_name_1, chord_name_2, chord_name_3, chord_name_4]
@@ -887,6 +887,14 @@ function setInstrumentFromPedal(newValue: double)
     end
 end
 
+function setFootPedalFilter(newValue: double)
+    if newValue == 1 then
+        switchButtonOff(foot_pedal_filter)
+    else
+        switchButtonOn(foot_pedal_filter)
+    end
+end
+
 function setOutputVolumes(newValue: double)
     var index: integer
     var value: double
@@ -907,6 +915,8 @@ function startAllProcesses(new_var: int)
     if GetWidgetValue(guitar_preset_value) == 1 then
         default_preset = "2"
     end
+
+    setFootPedalFilter(GetWidgetValue(foot_pedal_switch))
     
     SetTimersRunning(true);
 
@@ -1171,6 +1181,10 @@ on WidgetValueChanged (newValue: double) from foot_pedal
             setInstrumentFromPedal(newValue)
         end
     end
+end
+
+on WidgetValueChanged (newValue: double) from foot_pedal_switch
+    setFootPedalFilter(newValue)
 end
 
 /*on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From TSMIDI_DCHA
