@@ -75,7 +75,7 @@ var guitar_background_1, guitar_background_2, guitar_background_number_1, guitar
 var guitar_background_array: widget array = [guitar_background_1, guitar_background_2]
 var guitar_background_number_array: widget array = [guitar_background_number_1, guitar_background_number_2]
 
-var foot_pedal: widget
+var foot_pedal, foot_pedal_switch: widget
 
 var chord_name_1, chord_name_2, chord_name_3, chord_name_4: widget
 var chord_name_array: widget array = [chord_name_1, chord_name_2, chord_name_3, chord_name_4]
@@ -917,6 +917,7 @@ function startAllProcesses(new_var: int)
     end
     last_variation = current_variation
     current_variation = new_variation
+    last_track_number = -1
 
     bass_reverb_saved = false
     chord_player_triggered = -1
@@ -1163,10 +1164,12 @@ on WidgetValueChanged (newValue : Double) from midi_file_playing
 end
 
 on WidgetValueChanged (newValue: double) from foot_pedal
-    if GetWidgetValue(use_pedal_as_volume) == 1 then
-        setOutputVolumes(newValue)
-    else
-        setInstrumentFromPedal(newValue)
+    if GetWidgetValue(foot_pedal_switch) == 1 then
+        if GetWidgetValue(use_pedal_as_volume) == 1 then
+            setOutputVolumes(newValue)
+        else
+            setInstrumentFromPedal(newValue)
+        end
     end
 end
 
