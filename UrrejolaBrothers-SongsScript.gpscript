@@ -79,9 +79,11 @@ var foot_pedal, foot_pedal_switch, foot_pedal_filter: widget
 
 var chord_name_1, chord_name_2, chord_name_3, chord_name_4: widget
 var chord_name_array: widget array = [chord_name_1, chord_name_2, chord_name_3, chord_name_4]
+var next_chord_name_1, next_chord_name_2, next_chord_name_3, next_chord_name_4: widget
+var next_chord_name_array: widget array = [next_chord_name_1, next_chord_name_2, next_chord_name_3, next_chord_name_4]
 
-var chords_letter_1, chords_letter_2, chords_letter_3, chords_letter_4: widget
-var chords_letter_array : widget array = [chords_letter_1, chords_letter_2, chords_letter_3, chords_letter_4]
+//var chords_letter_1, chords_letter_2, chords_letter_3, chords_letter_4: widget
+//var chords_letter_array : widget array = [chords_letter_1, chords_letter_2, chords_letter_3, chords_letter_4]
 
 var special_button_1, special_button_2: widget
 var special_label_1, special_label_2: widget
@@ -90,14 +92,14 @@ var midi_channel, midi_volume: widget
 var audio_track_length: integer = 20
 var midi_track_length: integer = 20
 var knob_widget_array: widget array = [play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel]
-var knob_widget_label_array: string array = ["tr", "tr", "tr", "sec", "sec", "preset", "preset", "sec", "sec", "ch"]
+var knob_widget_label_array: string array = ["tr", "tr", "tr", "s", "s", "preset", "preset", "s", "s", "ch"]
 var knob_widget_led_array: widget array = [player_1_led, player_2_led, button_filter_16, player_length_led_1, player_length_led_2, guitar_amp_button_1, guitar_amp_button_2, beat_A_led_1, beat_A_led_2, button_filter_4]
 var knob_widget_range_array: integer array = [audio_track_length, audio_track_length, midi_track_length, 100, 100, 10, 10, 100, 100, 10]
 var knob_widget_led_on_array: double array = [0.6, 0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
 var knob_widget_led_off_array: double array = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
 var knob_widget_label_before: boolean array = [true, true, true, false, false, true, true, false, false, true]
 
-var chord_names: string array = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
+var modern_chord_names: string array = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 var number_of_tracks : Integer
 var song_name : String
 var midi_sequence : MidiSequence
@@ -125,10 +127,10 @@ var variation_time: double
 var events_allowed: boolean
 
 var current_chord: MidiMessage array
-var chord_for_naming: MidiMessage array
 var track_notes: MidiMessage array
 var chord_positions: integer array
 var chord_lengths: integer array
+var chord_names: string array
 var current_letter_index: integer
 var current_midi_part_value: integer
 
@@ -169,19 +171,15 @@ end
 function setChordLetterValues(number_of_tracks: integer)
     var x: integer
     var filter_value, reset_value: double
-    var letter_value: integer
     
     reset_value = filter_off_value
     for x=0; x<4; x=x+1 do
         filter_value = filter_off_value
-        letter_value = 0
         if x < number_of_tracks then
             filter_value = filter_on_value
-            letter_value = 1
             reset_value = filter_on_value
         end
         SetWidgetValue(button_filter_array[x], filter_value)
-        SetWidgetValue(chords_letter_array[x], letter_value)
     end
     SetWidgetValue(button_filter_9, reset_value)
 end
@@ -225,6 +223,7 @@ function setTrackButtonOff(track_number: integer)
     if track_number >= 0 then
         SetWidgetValue(button_letter_array[track_number], 0)
         SetWidgetLabel(chord_name_array[track_number], "")
+        SetWidgetLabel(next_chord_name_array[track_number], "")
     end
 end
 
@@ -283,15 +282,11 @@ end
 function resetPanelChords()
     removePanelChords()
     panel_chord_shift = 0
-    chord_positions = []
-    chord_lengths = []
-    track_notes = []
     drawPanelRows()
 end
 
 function fullResetSequence()
     setTrackButtonsOff()
-    MidiSequence_ResetToStart(midi_sequence)
     AllNotesOff(TSMIDI_DCHA)
     resetPanelChords()
     stopMidiPlayer()
@@ -454,7 +449,7 @@ function getChordName(chord: MidiMessage array) returns string
             end
         end
     end
-    chord_name = chord_names[keynote_number] + type_text
+    chord_name = modern_chord_names[keynote_number] + type_text
     result = chord_name
 end
 // ==============================================
@@ -561,6 +556,7 @@ function getTrackNotes(track_number: integer)
     track_notes = []
     chord_positions = []
     chord_lengths = []
+    chord_names = []
     while !end_of_file do
         MidiSequence_CollectEventsNow(midi_sequence)
         chord_events = MidiSequence_GetCurrentEvents(midi_sequence, track_number)
@@ -573,6 +569,7 @@ function getTrackNotes(track_number: integer)
         if Size(chord) > 0 then
             chord_positions <-- Size(track_notes)
             chord_lengths <-- Size(chord)
+            chord_names <-- getChordName(chord)
         end
         for index = 0; index < Size(chord); index = index + 1 do
             track_notes <-- chord[index]
@@ -588,15 +585,13 @@ end
 
 function getCurrentChord()
     var x: integer
-    
+
     current_chord = []
-    chord_for_naming = []
     if Size(chord_positions) > current_chord_number then
         for x=chord_positions[current_chord_number]; x<chord_positions[current_chord_number]+chord_lengths[current_chord_number]; x=x+1 do
             if GetWidgetValue(chord_root_array[last_track_number]) == 1 or x > chord_positions[current_chord_number] then
                 current_chord <-- track_notes[x]
             end
-            chord_for_naming <-- track_notes[x]
         end
         current_chord_number = current_chord_number + 1
     else
@@ -609,9 +604,12 @@ function getCurrentChord()
     last_chord = current_chord
 end
 
+function getTrackChords(track_number: integer)
+    getTrackNotes(track_number)
+end
+
 function playChord(track_number: Integer)
     if current_chord_number == 0 then
-        getTrackNotes(track_number)
         drawPanelChords()
         setPanelLetterOn(track_number)
     end
@@ -623,10 +621,13 @@ function playChord(track_number: Integer)
         setTrackButtonOff(track_number)
         removePanelChords()
     end
-    if Size(chord_for_naming) >= 3 then
-        SetWidgetLabel(chord_name_array[track_number], getChordName(chord_for_naming))
-    elsif current_chord_number > 0 then
-        SetWidgetLabel(chord_name_array[track_number], current_chord_number)
+    if current_chord_number > 0 then
+        SetWidgetLabel(chord_name_array[track_number], chord_names[current_chord_number - 1])
+        if Size(chord_names) > current_chord_number then
+            SetWidgetLabel(next_chord_name_array[track_number], chord_names[current_chord_number])
+        else
+            SetWidgetLabel(next_chord_name_array[track_number], "")
+        end
     end
 end
 
@@ -637,6 +638,7 @@ function playChordSequence(track_number: integer)
             last_track_number = track_number
             current_chord_number = 0
             panel_chord_shift = 0
+            getTrackChords(track_number)
             drawPanelRows()
         end
         last_variation = current_variation
