@@ -146,13 +146,7 @@ var panel_chord_row_on_value: double = 0.6
 var panel_chord_row_off_value: double = 0.0
 var panel_chord_shift: integer
 var panel_chord_columns: integer = 8
-var panel_letter_label_1, panel_letter_label_2, panel_letter_label_3, panel_letter_label_4, panel_letter_label_5, panel_letter_label_6, panel_letter_label_7, panel_letter_label_8, panel_letter_label_9, panel_letter_label_10, panel_letter_label_11, panel_letter_label_12, panel_letter_label_13, panel_letter_label_14, panel_letter_label_15, panel_letter_label_16, panel_letter_label_17, panel_letter_label_18, panel_letter_label_19, panel_letter_label_20: widget
-var panel_letter_array: widget array = [panel_letter_label_1, panel_letter_label_2, panel_letter_label_3, panel_letter_label_4, panel_letter_label_5, panel_letter_label_6, panel_letter_label_7, panel_letter_label_8, panel_letter_label_9, panel_letter_label_10, panel_letter_label_11, panel_letter_label_12, panel_letter_label_13, panel_letter_label_14, panel_letter_label_15, panel_letter_label_16, panel_letter_label_17, panel_letter_label_18, panel_letter_label_19, panel_letter_label_20]
-var panel_letter_empty_value: double = 0.0
-var panel_letter_on_value: double = 1.0
-var panel_letter_off_value: double = 0.5
-var panel_letter_songs: string array = ["Intro", "Terrenal", "Rufita", "Como una reggaedera", "Rita", "Electroshock", "Another way around"]
-var panel_letter_labels: string array = ["A", "ABACABACA", "BABA", "AA", "ABCA", "AAA", "ABACCBA"]
+
 var letter_array: string array
 var pedal_margin_range: integer = 4
 
@@ -234,21 +228,6 @@ function setTrackButtonsOff()
         setTrackButtonOff(x)
     end
     current_chord_number = 0
-end
-
-function getPanelLetters()
-    var x, song_index: integer
-    var letters: string
-
-    letter_array = []
-    song_index = indexOfStringArray(panel_letter_songs, song_name)
-    if song_index != -1 then
-        letters = panel_letter_labels[song_index]
-        for x=0; x<Length(letters); x=x+1 do
-            letter_array <-- CopySubstring(letters, x, 1)
-        end
-    end
-    current_letter_index = 0
 end
 
 function removePanelChords()
@@ -454,43 +433,6 @@ function getChordName(chord: MidiMessage array) returns string
 end
 // ==============================================
 
-function drawPanelLetters()
-    var position, x: integer
-    
-    position = Round(Size(panel_letter_array) / 2) - Round(IntToFloat(Size(letter_array)) / 2)
-    for x=0; x<Size(panel_letter_array); x=x+1 do
-        if (x >= position) and (x < position + Size(letter_array)) then
-            SetWidgetLabel(panel_letter_array[x], letter_array[x - position])
-            SetWidgetValue(panel_letter_array[x], panel_letter_off_value)
-        else
-            SetWidgetLabel(panel_letter_array[x], "")
-            SetWidgetValue(panel_letter_array[x], panel_letter_empty_value)
-        end
-    end
-end
-
-function setPanelLetterOn(track_number: integer)
-    var position, x, x_position: integer
-
-    if Size(letter_array) > 0 then
-        if letter_array[current_letter_index] == letters[track_number] then
-            position = Round(Size(panel_letter_array) / 2) - Round(IntToFloat(Size(letter_array)) / 2)
-            for x=0; x<Size(letter_array); x=x+1 do
-                x_position = x + position
-                if x == current_letter_index then
-                    SetWidgetValue(panel_letter_array[x_position], panel_letter_on_value)
-                else
-                    SetWidgetValue(panel_letter_array[x_position], panel_letter_off_value)
-                end
-            end
-            current_letter_index = current_letter_index + 1
-            if current_letter_index >= Size(letter_array) then
-                current_letter_index = 0
-            end
-        end
-    end
-end
-
 function sendChordOffToMidiDevice(chord: MidiMessage Array)
     var index : Integer
 
@@ -611,7 +553,6 @@ end
 function playChord(track_number: Integer)
     if current_chord_number == 0 then
         drawPanelChords()
-        setPanelLetterOn(track_number)
     end
     sendChordOffToMidiDevice(last_chord)
     getCurrentChord()
@@ -936,8 +877,6 @@ function startAllProcesses(new_var: int)
 
     stopPlayer()
     resetPanelChords()
-    getPanelLetters()
-    drawPanelLetters()
     
     // bypass audio players we don't need
     tracks = []
