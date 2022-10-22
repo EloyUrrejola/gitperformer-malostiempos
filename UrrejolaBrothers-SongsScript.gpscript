@@ -82,11 +82,7 @@ var chord_name_array: widget array = [chord_name_1, chord_name_2, chord_name_3, 
 var next_chord_name_1, next_chord_name_2, next_chord_name_3, next_chord_name_4: widget
 var next_chord_name_array: widget array = [next_chord_name_1, next_chord_name_2, next_chord_name_3, next_chord_name_4]
 
-//var chords_letter_1, chords_letter_2, chords_letter_3, chords_letter_4: widget
-//var chords_letter_array : widget array = [chords_letter_1, chords_letter_2, chords_letter_3, chords_letter_4]
-
-var special_button_1, special_button_2: widget
-var special_label_1, special_label_2: widget
+var special_button_1, midi_button: widget
 var midi_channel, midi_volume: widget
 
 var audio_track_length: integer = 20
@@ -875,7 +871,7 @@ function startAllProcesses(new_var: int)
     bass_reverb_saved = false
     chord_player_triggered = -1
 
-    stopPlayer()
+    //stopPlayer()
     resetPanelChords()
     
     // bypass audio players we don't need
@@ -955,14 +951,16 @@ on WidgetValueChanged (w: Widget, player_index: Integer, newValue : Double) from
     end
 end
 
-on WidgetValueChanged (w: Widget, button_index: Integer, newValue : Double) from reset_button, stop_button
+on WidgetValueChanged (newValue : Double) from reset_button
     if newValue == 1 then
-        if button_index == 0 then
-            fullResetSequence()
-        elsif button_index == 1 then
-            stopPlayer()
-            EnablePlayhead(false)
-        end
+        fullResetSequence()
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from stop_button
+    if newValue == 1 then
+        stopPlayer()
+        EnablePlayhead(false)
     end
 end
 
@@ -999,14 +997,14 @@ on WidgetValueChanged (newValue : Double) from guitar_button
             setOctaveOff()
             switchGuitarOn()
             if GetWidgetValue(midi_channel) > 0 and GetWidgetValue(guitar_with_midi) == 1 then
-                switchButtonOn(special_button_2)
+                switchButtonOn(midi_button)
             end
             SetWidgetValue(bass_button, 0)
         elsif GetWidgetValue(octave_button) == 0 then
             SetWidgetValue(bass_button, 1)
             switchGuitarOff()
             if GetWidgetValue(midi_channel) > 0 and GetWidgetValue(guitar_with_midi) == 1 then
-                switchButtonOff(special_button_2)
+                switchButtonOff(midi_button)
             end
         end
     end
@@ -1021,18 +1019,18 @@ on WidgetValueChanged (newValue : Double) from special_button_1
     end
 end
 
-on WidgetValueChanged (newValue : Double) from special_button_2
+on WidgetValueChanged (newValue : Double) from midi_button
     setMidiInstrument(newValue)
 end
 
 on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
-    if track_index == 3 and GetWidgetValue(midi_player_track) > 0 then
-        if newValue == 1 then
+    if newValue == 1 then
+        if track_index == 3 and GetWidgetValue(midi_player_track) > 0 then
             SetParameter(MidiFilePlayer, 3, newValue)
             SetParameter(MidiFilePlayer, 8, 1)
+        elsif chord_player_triggered < 0 then
+            playChordSequence(track_index)
         end
-    elsif newValue == 1 and chord_player_triggered < 0 then
-        playChordSequence(track_index)
     end
 end
 
@@ -1164,7 +1162,7 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
     if CC_number == 27 then
         if GetWidgetValue(midi_channel) > 0 then
             // MIDI
-            switchButton(special_button_2)
+            switchButton(midi_button)
         end
     end
 end
@@ -1173,7 +1171,7 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 28 From MidiPipe
     var part_midi_value: integer
 
     if InSetlistMode() then
-    part_midi_value = GetCCValue(cc)
+        part_midi_value = GetCCValue(cc)
         if (part_midi_value < current_midi_part_value and (part_midi_value <> 0 or current_midi_part_value <> 120)) or (part_midi_value == 120 and current_midi_part_value == 0) then
             SongNextPart()
         elsif part_midi_value > current_midi_part_value or (part_midi_value == 0 and current_midi_part_value == 120) then
@@ -1240,7 +1238,7 @@ on BeatChanged(bar : integer, beat : integer)
 
     for x=0; x<Size(button_play_array); x=x+1 do
         if GetWidgetValue(button_play_array[x]) == 1 then
-            max_time = Round(GetWidgetValue(player_length_array[x]) * 100)
+            max_time = Round(GetWidgetValue(player_length_array[x]) * knob_widget_range_array[x+3])
             if current_beat >= max_time then
                 stopPlayer()
             else
