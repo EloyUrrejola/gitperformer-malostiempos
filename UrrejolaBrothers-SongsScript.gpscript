@@ -103,8 +103,8 @@ var directory : String = "/Volumes/MiSSD/Users/eloy/Documents/MidiFiles/"
 var midi_file_name : String
 var cc_chord : Integer Array = [20, 21, 22, 23]
 var cc_reset : Integer Array = [24]
-var cc_stop : Integer Array = [25]
-var cc_play : Integer Array = [26, 27]
+var cc_stop : Integer Array = [27]
+var cc_play : Integer Array = [25, 26]
 var last_track_number : Integer = -1
 var last_chord : MidiMessage Array = []
 var current_chord_number: integer = 0
@@ -158,6 +158,38 @@ function indexOfStringArray(text: string array, search: string) returns integer
     result = return
 end
 
+// Parse time value (integer in ms) to timestamp-string (hh:mm:ss)
+function intToTimestamp (time_seconds : Integer) Returns String
+    var num_h, num_m, num_s, rest : Integer
+    var str_h, str_m, str_s : String
+    
+    //hours
+    num_h = Floor(time_seconds / 3600)
+    rest = time_seconds - (num_h * 3600)
+    str_h = IntToString(num_h)
+    if num_h < 10 then
+        str_h = "0" + str_h
+    end
+
+    //extract minutes from total length Integer value
+    num_m = Floor(rest / 60)
+    rest = rest - (num_m * 60)
+    str_m = IntToString(num_m)
+    if num_m < 10 then
+        str_m = "0" + str_m
+    end
+    
+    //extract seconds from total length Integer value
+    num_s = rest % 60
+    str_s = IntToString(num_s)
+    if num_s < 10 then
+        str_s = "0" + str_s
+    end
+    
+    //assemble whole timestamp-string
+    result = str_m + ":" + str_s
+end
+
 function setChordLetterValues(number_of_tracks: integer)
     var x: integer
     var filter_value, reset_value: double
@@ -170,6 +202,9 @@ function setChordLetterValues(number_of_tracks: integer)
             reset_value = filter_on_value
         end
         SetWidgetValue(button_filter_array[x], filter_value)
+    end
+    if (GetWidgetValue(midi_player_track) > 0) then
+        reset_value = filter_on_value
     end
     SetWidgetValue(button_filter_9, reset_value)
 end
@@ -268,7 +303,7 @@ function fullResetSequence()
     last_chord = []
 end
 
-function stopPlayer()
+function resetPlayers()
     var x: integer
 
     EnablePlayhead(false)
@@ -278,7 +313,11 @@ function stopPlayer()
     end
     for x=0; x<2; x=x+1 do
         SetWidgetValue(button_play_array[x], 0)
-        SetWidgetLabel(player_time_array[x], "00:00")
+        if GetWidgetValue(play_track_array[x]) > 0 then
+            SetWidgetLabel(player_time_array[x], intToTimestamp(0))
+        else
+            SetWidgetLabel(player_time_array[x], "")
+        end
         SetWidgetValue(player_fader_array[x], 0)
     end
 end
@@ -739,7 +778,7 @@ function checkPlayerTracks()
     
     stop_button_value = filter_off_value
     for x=0; x<Size(knob_widget_array); x=x+1 do
-        if x!=2 or number_of_tracks < 4 then
+        if x != 2 or number_of_tracks < 4 then
             widget_is_on = setKnobLabel(knob_widget_array[x], knob_widget_label_array[x], Round(GetWidgetValue(knob_widget_array[x]) * knob_widget_range_array[x]), knob_widget_led_array[x], knob_widget_led_on_array[x], knob_widget_led_off_array[x], knob_widget_label_before[x])
             if (x==0 or x==1) and widget_is_on then
                 stop_button_value = filter_on_value
@@ -871,7 +910,7 @@ function startAllProcesses(new_var: int)
     bass_reverb_saved = false
     chord_player_triggered = -1
 
-    //stopPlayer()
+    resetPlayers()
     resetPanelChords()
     
     // bypass audio players we don't need
@@ -958,12 +997,13 @@ on WidgetValueChanged (newValue : Double) from reset_button
         removePanelChords()
         last_chord = []
         //fullResetSequence()
+        stopMidiPlayer()
     end
 end
 
 on WidgetValueChanged (newValue : Double) from stop_button
     if newValue == 1 then
-        stopPlayer()
+        resetPlayers()
         EnablePlayhead(false)
     end
 end
@@ -1201,38 +1241,6 @@ on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_
     end
 end
 
-// Parse time value (integer in ms) to timestamp-string (hh:mm:ss)
-function IntToTimestamp (time_seconds : Integer) Returns String
-    var num_h, num_m, num_s, rest : Integer
-    var str_h, str_m, str_s : String
-    
-    //hours
-    num_h = Floor(time_seconds / 3600)
-    rest = time_seconds - (num_h * 3600)
-    str_h = IntToString(num_h)
-    if num_h < 10 then
-        str_h = "0" + str_h
-    end
-
-    //extract minutes from total length Integer value
-    num_m = Floor(rest / 60)
-    rest = rest - (num_m * 60)
-    str_m = IntToString(num_m)
-    if num_m < 10 then
-        str_m = "0" + str_m
-    end
-    
-    //extract seconds from total length Integer value
-    num_s = rest % 60
-    str_s = IntToString(num_s)
-    if num_s < 10 then
-        str_s = "0" + str_s
-    end
-    
-    //assemble whole timestamp-string
-    result = str_m + ":" + str_s
-end
-
 on BeatChanged(bar : integer, beat : integer)
     var beat_change_at : integer
     var current_beat : integer = (bar * 4 - 4) + beat - 1
@@ -1244,9 +1252,9 @@ on BeatChanged(bar : integer, beat : integer)
         if GetWidgetValue(button_play_array[x]) == 1 then
             max_time = Round(GetWidgetValue(player_length_array[x]) * knob_widget_range_array[x+3])
             if current_beat >= max_time then
-                stopPlayer()
+                resetPlayers()
             else
-                SetWidgetLabel(player_time_array[x], IntToTimestamp(current_beat))
+                SetWidgetLabel(player_time_array[x], intToTimestamp(current_beat))
                 SetWidgetValue(player_fader_array[x], ((current_beat * 100) / max_time) / 100.0)
                 
                 beat_change_at = Round(GetWidgetValue(beat_a_array[x]) * 100)
