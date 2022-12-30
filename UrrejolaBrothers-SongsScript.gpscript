@@ -1,0 +1,1282 @@
+var TSMIDI_IZDA, TSMIDI_DCHA, MidiPipe, MidiGuitarBlock : MidiInBlock
+var SongPlayer, SongPlayer2, SongPlayer3, SongPlayer4, SongPlayer5, SongPlayer6, SongPlayer7, SongPlayer8, SongPlayer9, SongPlayer10, SongPlayer11, SongPlayer12: PluginBlock
+var song_player_array: PluginBlock array = [SongPlayer, SongPlayer2, SongPlayer3, SongPlayer4, SongPlayer5, SongPlayer6, SongPlayer7, SongPlayer8, SongPlayer9, SongPlayer10, SongPlayer11, SongPlayer12]
+var MidiFilePlayer: PluginBlock
+var OmnisphereInstrument: PluginBlock
+var BassGuitarMixer, AudioPlayerMixer, MTuner: PluginBlock
+var cycle_1, cycle_2, cycle_3, cycle_4: widget
+var cycle_array: widget array = [cycle_1, cycle_2, cycle_3, cycle_4]
+var chord_root_1, chord_root_2, chord_root_3, chord_root_4: widget
+var chord_root_array: widget array = [chord_root_1, chord_root_2, chord_root_3, chord_root_4]
+
+var output_volume_1, output_volume_2, output_volume_3, output_volume_4, use_pedal_as_volume: widget
+var output_volume_array: widget array = [output_volume_1, output_volume_2, output_volume_3, output_volume_4]
+
+var button_A, button_B, button_C, button_D: widget
+var button_letter_array: widget array = [button_A, button_B, button_C, button_D]
+
+var button_play_1, button_play_2: widget
+var button_play_array: widget array = [button_play_1, button_play_2]
+
+var button_filter_2, button_filter_4, button_filter_9, button_filter_10, button_filter_13, button_filter_14, button_filter_15, button_filter_16: widget
+var button_filter_array: widget array = [button_filter_13, button_filter_14, button_filter_15, button_filter_16]
+
+var tuner_button, bass_button, octave_button, guitar_button, octave_amount: widget
+var bass_cc: Integer = 20
+var octave_cc: Integer = 21
+var guitar_cc: Integer = 22
+var tuner_cc: Integer = 24
+var GuitarGain, GuitarPitch, GuitarAmp, GuitarDelay, GuitarReverb, GuitarMidi, MIDIGuitarChannel: PluginBlock
+var guitar_plugins_to_bypass: PluginBlock array = [GuitarPitch]
+var midi_instrument_velocity, guitar_midi_effect: widget
+
+var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amount, octave_reverb_length: widget
+
+var select_bass, bass_name: widget
+var bass_name_array: string array = ["Warwick", "Status"]
+
+var play_1_track, play_2_track, midi_player_track, midi_file_player_label, midi_file_playing: widget
+var play_track_array: widget array = [play_1_track, play_2_track]
+var play_1_volume, play_2_volume: widget
+var play_volume_array: widget array = [play_1_volume, play_2_volume]
+var player_1_led, player_2_led: widget
+var beat_a_1, beat_A_led_1, beat_a_2, beat_A_led_2: widget
+var beat_a_array: widget array = [beat_a_1, beat_a_2]
+var beat_a_lead_array: widget array = [beat_A_led_1, beat_A_led_2]
+var player_1_fader, player_2_fader: widget
+var player_fader_array: widget array = [player_1_fader, player_2_fader]
+var player_time_1, player_time_2: widget
+var player_time_array: widget array = [player_time_1, player_time_2]
+var player_length_1, player_length_2, player_length_led_1, player_length_led_2: widget
+var player_length_array: widget array = [player_length_1, player_length_2]
+var reset_button, stop_button: widget
+
+var guitar_delay_button_1, guitar_amp_button_1, guitar_reverb_button_1: widget
+var guitar_delay_time_1, guitar_delay_feedback_1, guitar_delay_mix_1, guitar_amp_preset_1, guitar_reverb_amount_1, guitar_reverb_length_1: widget
+var guitar_delay_button_2, guitar_amp_button_2, guitar_reverb_button_2: widget
+var guitar_delay_time_2, guitar_delay_feedback_2, guitar_delay_mix_2, guitar_amp_preset_2, guitar_reverb_amount_2, guitar_reverb_length_2: widget
+
+var guitar_delay_button_array: widget array = [guitar_delay_button_1, guitar_delay_button_2]
+var guitar_amp_button_array: widget array = [guitar_amp_button_1, guitar_amp_button_2]
+var guitar_reverb_button_array: widget array = [guitar_reverb_button_1, guitar_reverb_button_2]
+var guitar_delay_time_array: widget array = [guitar_delay_time_1, guitar_delay_time_2]
+var guitar_delay_feedback_array: widget array = [guitar_delay_feedback_1, guitar_delay_feedback_2]
+var guitar_delay_mix_array: widget array = [guitar_delay_mix_1, guitar_delay_mix_2]
+var guitar_amp_preset_array: widget array = [guitar_amp_preset_1, guitar_amp_preset_2]
+var guitar_reverb_amount_array: widget array = [guitar_reverb_amount_1, guitar_reverb_amount_2]
+var guitar_reverb_length_array: widget array = [guitar_reverb_length_1, guitar_reverb_length_2]
+
+var guitar_volume_1, guitar_volume_2: widget
+var guitar_volume_array: widget array = [guitar_volume_1, guitar_volume_2]
+var guitar_with_midi: widget
+
+var guitar_preset_button, selected_guitar_preset, guitar_preset_value: widget
+var guitar_background_1, guitar_background_2, guitar_background_number_1, guitar_background_number_2: widget
+var guitar_background_array: widget array = [guitar_background_1, guitar_background_2]
+var guitar_background_number_array: widget array = [guitar_background_number_1, guitar_background_number_2]
+
+var foot_pedal, foot_pedal_switch, foot_pedal_filter: widget
+
+var chord_name_1, chord_name_2, chord_name_3, chord_name_4: widget
+var chord_name_array: widget array = [chord_name_1, chord_name_2, chord_name_3, chord_name_4]
+var next_chord_name_1, next_chord_name_2, next_chord_name_3, next_chord_name_4: widget
+var next_chord_name_array: widget array = [next_chord_name_1, next_chord_name_2, next_chord_name_3, next_chord_name_4]
+
+var special_button_1, midi_button: widget
+var midi_channel, midi_volume: widget
+
+var audio_track_length: integer = 20
+var midi_track_length: integer = 20
+var knob_widget_array: widget array = [play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel]
+var knob_widget_label_array: string array = ["tr", "tr", "tr", "s", "s", "preset", "preset", "s", "s", "ch"]
+var knob_widget_led_array: widget array = [player_1_led, player_2_led, button_filter_16, player_length_led_1, player_length_led_2, guitar_amp_button_1, guitar_amp_button_2, beat_A_led_1, beat_A_led_2, button_filter_4]
+var knob_widget_range_array: integer array = [audio_track_length, audio_track_length, midi_track_length, 100, 100, 10, 10, 100, 100, 10]
+var knob_widget_led_on_array: double array = [0.6, 0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+var knob_widget_led_off_array: double array = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+var knob_widget_label_before: boolean array = [true, true, true, false, false, true, true, false, false, true]
+
+var modern_chord_names: string array = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
+var number_of_tracks : Integer
+var song_name : String
+var midi_sequence : MidiSequence
+var directory : String = "/Volumes/MiSSD/Users/eloy/Documents/MidiFiles/"
+var midi_file_name : String
+var cc_chord : Integer Array = [20, 21, 22, 23]
+var cc_reset : Integer Array = [24]
+var cc_stop : Integer Array = [27]
+var cc_play : Integer Array = [25, 26]
+var last_track_number : Integer = -1
+var last_chord : MidiMessage Array = []
+var current_chord_number: integer = 0
+var last_variation : string = "-1"
+var current_variation : string
+var bass_reverb_saved: Boolean = false
+var preset_label_array: String array = ["1", "2"]
+var filter_off_value: double = 0.6
+var filter_on_value: double = 0.0
+var letters: string array = ["A", "B", "C", "D"]
+var chord_player_triggered: integer = -1
+
+var start_time: double
+var delayed_widgets: widget array
+var variation_time: double
+var events_allowed: boolean
+
+var current_chord: MidiMessage array
+var track_notes: MidiMessage array
+var chord_positions: integer array
+var chord_lengths: integer array
+var chord_names: string array
+var current_letter_index: integer
+var current_midi_part_value: integer
+
+// chord panel
+var panel_chord_1, panel_chord_2, panel_chord_3, panel_chord_4, panel_chord_5, panel_chord_6, panel_chord_7, panel_chord_8, panel_chord_9, panel_chord_10, panel_chord_11, panel_chord_12, panel_chord_13, panel_chord_14, panel_chord_15, panel_chord_16: widget
+var panel_chord_array: widget array = [panel_chord_1, panel_chord_2, panel_chord_3, panel_chord_4, panel_chord_5, panel_chord_6, panel_chord_7, panel_chord_8, panel_chord_9, panel_chord_10, panel_chord_11, panel_chord_12, panel_chord_13, panel_chord_14, panel_chord_15, panel_chord_16]
+var panel_chord_row_1, panel_chord_row_2: widget;
+var panel_chord_row_array: widget array = [panel_chord_row_1, panel_chord_row_2]
+var panel_chord_on_value: double = 1.0
+var panel_chord_off_value: double = 0.5
+var panel_chord_empty_value: double = 0.0
+var panel_chord_row_on_value: double = 0.6
+var panel_chord_row_off_value: double = 0.0
+var panel_chord_shift: integer
+var panel_chord_columns: integer = 8
+
+var letter_array: string array
+var pedal_margin_range: integer = 4
+
+function indexOfStringArray(text: string array, search: string) returns integer
+    var x: integer
+    var return: integer = -1
+    
+    for x=0; x<Size(text); x=x+1 do
+        if text[x] == search then
+            return = x
+        end
+    end
+    result = return
+end
+
+// Parse time value (integer in ms) to timestamp-string (hh:mm:ss)
+function intToTimestamp (time_seconds : Integer) Returns String
+    var num_h, num_m, num_s, rest : Integer
+    var str_h, str_m, str_s : String
+    
+    //hours
+    num_h = Floor(time_seconds / 3600)
+    rest = time_seconds - (num_h * 3600)
+    str_h = IntToString(num_h)
+    if num_h < 10 then
+        str_h = "0" + str_h
+    end
+
+    //extract minutes from total length Integer value
+    num_m = Floor(rest / 60)
+    rest = rest - (num_m * 60)
+    str_m = IntToString(num_m)
+    if num_m < 10 then
+        str_m = "0" + str_m
+    end
+    
+    //extract seconds from total length Integer value
+    num_s = rest % 60
+    str_s = IntToString(num_s)
+    if num_s < 10 then
+        str_s = "0" + str_s
+    end
+    
+    //assemble whole timestamp-string
+    result = str_m + ":" + str_s
+end
+
+function setChordLetterValues(number_of_tracks: integer)
+    var x: integer
+    var filter_value, reset_value: double
+    
+    reset_value = filter_off_value
+    for x=0; x<4; x=x+1 do
+        filter_value = filter_off_value
+        if x < number_of_tracks then
+            filter_value = filter_on_value
+            reset_value = filter_on_value
+        end
+        SetWidgetValue(button_filter_array[x], filter_value)
+    end
+    if (GetWidgetValue(midi_player_track) > 0) then
+        reset_value = filter_on_value
+    end
+    SetWidgetValue(button_filter_9, reset_value)
+end
+
+function getSongNameFromVariationName(variation_name: string) returns string
+    var song_name: string
+    
+    song_name = StringUpToFirstOccurrence(variation_name, " - ", false, false)
+    result = song_name
+end
+
+function loadMidiFile()
+    var variation_name: string
+    
+    number_of_tracks = 0
+    variation_name = GetVariationName(GetCurrentVariation())
+    song_name = getSongNameFromVariationName(variation_name)
+    midi_file_name = directory + ReplaceString(song_name, " ", "_", false) + ".mid"
+    if FileExists(midi_file_name) then
+        number_of_tracks = MidiSequence_LoadMidiFile(midi_sequence, midi_file_name)
+    end
+    setChordLetterValues(number_of_tracks)
+end
+
+function setBassName()
+    SetWidgetLabel(bass_name, bass_name_array[Round(GetWidgetValue(select_bass))])
+end
+
+Initialization
+    var switch: boolean
+    
+    if InSetlistMode() then
+        switch = SwitchToSongByIndex(0,0)
+    else
+        SetVariation(0)
+    end
+    current_midi_part_value = 200
+end
+
+function setTrackButtonOff(track_number: integer)
+    if track_number >= 0 then
+        SetWidgetValue(button_letter_array[track_number], 0)
+        SetWidgetLabel(chord_name_array[track_number], "")
+        SetWidgetLabel(next_chord_name_array[track_number], "")
+    end
+end
+
+function setTrackButtonsOff()
+    var x: integer
+    
+    for x=0; x<4; x=x+1 do
+        setTrackButtonOff(x)
+    end
+    current_chord_number = 0
+end
+
+function removePanelChords()
+    var x: integer
+
+    for x=0; x<Size(panel_chord_array); x=x+1 do
+        SetWidgetLabel(panel_chord_array[x], "")
+        SetWidgetValue(panel_chord_array[x], panel_chord_empty_value)
+    end
+end
+
+function drawPanelRows()
+    var x, row: integer
+
+    for x=0; x<Size(panel_chord_row_array); x=x+1 do
+        row = x + 1 + panel_chord_shift
+        SetWidgetLabel(panel_chord_row_array[x], row)
+        if (Size(chord_positions) > 0) and (row < 2 || Size(chord_positions) > panel_chord_columns) then
+            SetWidgetValue(panel_chord_row_array[x], panel_chord_row_on_value)
+        else
+            SetWidgetValue(panel_chord_row_array[x], panel_chord_row_off_value)
+        end
+    end
+end
+
+function stopMidiPlayer()
+    SetParameter(MidiFilePlayer, 3, 0)
+    SetWidgetValue(button_D, 0)
+end
+
+function resetPanelChords()
+    removePanelChords()
+    panel_chord_shift = 0
+    drawPanelRows()
+end
+
+function fullResetSequence()
+    setTrackButtonsOff()
+    AllNotesOff(TSMIDI_DCHA)
+    resetPanelChords()
+    stopMidiPlayer()
+    last_chord = []
+end
+
+function resetPlayers()
+    var x: integer
+
+    EnablePlayhead(false)
+    for x=0; x<12; x=x+1 do
+        SetParameter(song_player_array[x], 0, 0)
+        SetParameter(song_player_array[x], 4, 0)
+    end
+    for x=0; x<2; x=x+1 do
+        SetWidgetValue(button_play_array[x], 0)
+        if GetWidgetValue(play_track_array[x]) > 0 then
+            SetWidgetLabel(player_time_array[x], intToTimestamp(0))
+        else
+            SetWidgetLabel(player_time_array[x], "")
+        end
+        SetWidgetValue(player_fader_array[x], 0)
+    end
+end
+
+// ===================== CHORD NAMING ===================
+function getNoteNumber(note: MidiMessage) returns integer
+    var note_message: NoteMessage = ReinterpretAsNoteOnMessage(note)
+    var note_number: integer = GetNoteNumber(note_message)
+    result = note_number % 12
+end
+
+function getKeynoteNumber(chord: MidiMessage array) returns integer
+    var keynote: MidiMessage = chord[0]
+    result = getNoteNumber(keynote)
+end
+
+function getThird(chord: MidiMessage array, keynote_number: integer) returns string
+    var x: integer
+    var third_minor: integer = (keynote_number + 3) % 12
+    var third_major: integer = (keynote_number + 4) % 12
+    var is_major: boolean = false
+    var is_minor: boolean = false
+    for x=0; x<Size(chord); x=x+1 do
+        if getNoteNumber(chord[x]) == third_major then
+            is_major = true
+        end
+        if getNoteNumber(chord[x]) == third_minor then
+            is_minor = true
+        end
+    end
+    result = ""
+    if is_major then
+        result = "major"
+    elsif is_minor then
+        result = "minor"
+    end
+end
+
+function getFifth(chord: MidiMessage array, keynote_number: integer) returns string
+    var x: integer
+    var fifth_dim: integer = (keynote_number + 6) % 12
+    var fifth_per: integer = (keynote_number + 7) % 12
+    var fifth_aug: integer = (keynote_number + 8) % 12
+    var is_dim: boolean = false;
+    var is_per: boolean = false;
+    var is_aug: boolean = false;
+    for x=0; x<Size(chord); x=x+1 do
+        if getNoteNumber(chord[x]) == fifth_per then
+            is_per = true
+        end
+        if getNoteNumber(chord[x]) == fifth_dim then
+            is_dim = true
+        end
+        if getNoteNumber(chord[x]) == fifth_aug then
+            is_aug = true
+        end
+    end
+    result = ""
+    if is_per then
+        result = "perfect"
+    elsif is_dim then
+        result = "dim"
+    elsif is_aug then
+        result = "aug"
+    end
+end
+
+function getSeventh(chord: MidiMessage array, keynote_number: integer) returns string
+    var x: integer
+    var seventh_dim: integer = (keynote_number + 9) % 12
+    var seventh_minor: integer = (keynote_number + 10) % 12
+    var seventh_major: integer = (keynote_number + 11) % 12
+    var is_dim: boolean = false
+    var is_minor: boolean = false
+    var is_major: boolean = false
+    for x=0; x<Size(chord); x=x+1 do
+        if getNoteNumber(chord[x]) == seventh_major then
+            is_major = true
+        end
+        if getNoteNumber(chord[x]) == seventh_minor then
+            is_minor = true
+        end
+        if getNoteNumber(chord[x]) == seventh_dim then
+            is_dim = true
+        end
+    end
+    result = ""
+    if is_major then
+        result = "major"
+    elsif is_minor then
+        result = "minor"
+    elsif is_dim then
+        result = "dim"
+    end
+end
+
+function getChordName(chord: MidiMessage array) returns string
+    var keynote_number: integer = getKeynoteNumber(chord)
+    var third: string = getThird(chord, keynote_number)
+    var fifth: string = getFifth(chord, keynote_number)
+    var seventh: string = getSeventh(chord, keynote_number)
+    var type_text, chord_name: string = ""
+    if third == "minor" then
+        type_text = "m"
+        if fifth == "dim" then
+            type_text = "dim"
+            if seventh == "major" then
+                type_text = "dimMaj7"
+            elsif seventh == "minor" then
+                type_text = "m7(b5)"
+            elsif seventh == "dim" then
+                type_text = "dim7"
+            end
+        elsif fifth == "perfect" then
+            type_text = "m"
+            if seventh == "major" then
+                type_text = "mMaj7"
+            elsif seventh == "minor" then
+                type_text = "m7"
+            elsif seventh == "dim" then
+                type_text = "m6"
+            end
+        end
+    elsif third == "major" then
+        if fifth == "dim" then
+            type_text = "b5"
+        elsif fifth == "perfect" or fifth == "" then
+            if seventh == "major" then
+                type_text = "Maj7"
+            elsif seventh == "minor" then
+                type_text = "7"
+            elsif seventh == "dim" then
+                type_text = "6"
+            end
+        elsif fifth == "aug" then
+            type_text = "+"
+            if seventh == "major" then
+                type_text = "Maj7#5"
+            elsif seventh == "minor" then
+                type_text = "+7"
+            elsif seventh == "dim" then
+                type_text = "+6"
+            end
+        end
+    end
+    chord_name = modern_chord_names[keynote_number] + type_text
+    result = chord_name
+end
+// ==============================================
+
+function sendChordOffToMidiDevice(chord: MidiMessage Array)
+    var index : Integer
+
+    for index = 0; index < Size(chord); index = index + 1 do
+        TSMIDI_DCHA.SendNow(ReinterpretAsNoteOffMessage(chord[index]))
+    end
+end
+
+function sendChordToMidiDevice(chord: MidiMessage Array)
+    var index : Integer
+
+    for index = 0; index < Size(chord); index = index + 1 do
+        TSMIDI_DCHA.SendNow(chord[index])
+    end
+end
+
+function drawPanelChords()
+    var x, y: integer
+    var chord: MidiMessage array
+
+    removePanelChords()
+    drawPanelRows()
+    for x=panel_chord_columns*panel_chord_shift; x<Size(chord_positions); x=x+1 do
+        chord = []
+        for y=chord_positions[x]; y<chord_positions[x]+chord_lengths[x]; y=y+1 do
+            chord <-- track_notes[y]
+        end
+        if Size(chord) > 2 and (x - panel_chord_columns*panel_chord_shift) < Size(panel_chord_array) then
+            SetWidgetLabel(panel_chord_array[x - panel_chord_columns*panel_chord_shift], getChordName(chord))
+            SetWidgetValue(panel_chord_array[x - panel_chord_columns*panel_chord_shift], panel_chord_off_value)
+        end
+    end
+end
+
+function setPanelChordOn(chord_number: integer)
+    var x: integer
+    if (Size(chord_positions) > Size(panel_chord_array))
+            and chord_number % panel_chord_columns == 0
+            and chord_number < Size(chord_positions) - panel_chord_columns - 1
+            and chord_number > 0 then
+        panel_chord_shift = panel_chord_shift + 1
+        drawPanelChords()
+    end
+
+    for x=panel_chord_columns*panel_chord_shift; x-panel_chord_columns*panel_chord_shift < Size(panel_chord_array); x=x+1 do
+        if (x == chord_number) then
+            SetWidgetValue(panel_chord_array[x - panel_chord_columns*panel_chord_shift], panel_chord_on_value)
+        elsif x < Size(chord_lengths) then
+            SetWidgetValue(panel_chord_array[x - panel_chord_columns*panel_chord_shift], panel_chord_off_value)
+        else
+            SetWidgetValue(panel_chord_array[x - panel_chord_columns*panel_chord_shift], panel_chord_empty_value)
+        end
+    end
+end
+
+function getTrackNotes(track_number: integer)
+    var chord_events : MidiMessage Array = []
+    var end_of_file: boolean = false
+    var chord: MidiMessage array
+    var index: integer
+    var chord_index: integer = 0
+
+    track_notes = []
+    chord_positions = []
+    chord_lengths = []
+    chord_names = []
+    while !end_of_file do
+        MidiSequence_CollectEventsNow(midi_sequence)
+        chord_events = MidiSequence_GetCurrentEvents(midi_sequence, track_number)
+        chord = []
+        for index = 0; index < Size(chord_events); index = index + 1 do
+            if IsNoteOn(chord_events[index]) then
+                chord <-- chord_events[index]
+            end
+        end
+        if Size(chord) > 0 then
+            chord_positions <-- Size(track_notes)
+            chord_lengths <-- Size(chord)
+            chord_names <-- getChordName(chord)
+        end
+        for index = 0; index < Size(chord); index = index + 1 do
+            track_notes <-- chord[index]
+        end
+
+        if Size(chord_events) == 0 then
+            end_of_file = true
+        end
+        chord_index = chord_index + 1
+    end
+    MidiSequence_ResetToStart(midi_sequence)
+end
+
+function getCurrentChord()
+    var x: integer
+
+    current_chord = []
+    if Size(chord_positions) > current_chord_number then
+        for x=chord_positions[current_chord_number]; x<chord_positions[current_chord_number]+chord_lengths[current_chord_number]; x=x+1 do
+            if GetWidgetValue(chord_root_array[last_track_number]) == 1 or x > chord_positions[current_chord_number] then
+                current_chord <-- track_notes[x]
+            end
+        end
+        current_chord_number = current_chord_number + 1
+    else
+        current_chord_number = 0
+        if GetWidgetValue(cycle_array[last_track_number]) == 1 then
+            getCurrentChord()
+        end
+    end
+    setPanelChordOn(current_chord_number - 1)
+    last_chord = current_chord
+end
+
+function getTrackChords(track_number: integer)
+    getTrackNotes(track_number)
+end
+
+function playChord(track_number: Integer)
+    if current_chord_number == 0 then
+        drawPanelChords()
+    end
+    sendChordOffToMidiDevice(last_chord)
+    getCurrentChord()
+    sendChordToMidiDevice(current_chord)
+
+    if Size(current_chord) == 0 then
+        setTrackButtonOff(track_number)
+        removePanelChords()
+    end
+    if current_chord_number > 0 then
+        SetWidgetLabel(chord_name_array[track_number], chord_names[current_chord_number - 1])
+        if Size(chord_names) > current_chord_number then
+            SetWidgetLabel(next_chord_name_array[track_number], chord_names[current_chord_number])
+        else
+            SetWidgetLabel(next_chord_name_array[track_number], "")
+        end
+    end
+end
+
+function playChordSequence(track_number: integer)
+    if track_number < number_of_tracks then
+        if track_number != last_track_number Or current_variation != last_variation then
+            setTrackButtonOff(last_track_number)
+            last_track_number = track_number
+            current_chord_number = 0
+            panel_chord_shift = 0
+            getTrackChords(track_number)
+            drawPanelRows()
+        end
+        last_variation = current_variation
+        playChord(track_number)
+    end
+end
+
+// ===============================
+
+function playAudioTrack(player_index: Integer, audio_track: Integer)
+    var volume: Double = GetWidgetValue(play_volume_array[player_index])
+
+    SetParameter(AudioPlayerMixer, (audio_track - 1) * 7, volume)
+    SetParameter(song_player_array[audio_track - 1], 9, 1)
+    SetParameter(song_player_array[audio_track - 1], 1, 1)
+end
+
+// ==================================
+
+function sendGuitarAmpPreset(preset_value: Double)
+    SendNow(TSMIDI_IZDA, MakeProgramChangeMessage(Round(preset_value * 10)))
+end
+
+function setGuitarPreset(guitar_preset: integer)
+    SetParameter(GuitarGain, 0, GetWidgetValue(guitar_volume_array[guitar_preset]))
+    if GetWidgetValue(guitar_amp_button_array[guitar_preset]) == 1 then
+        SetPluginBypassed(GuitarAmp, false)
+        sendGuitarAmpPreset(GetWidgetValue(guitar_amp_preset_array[guitar_preset]))
+    else
+        SetPluginBypassed(GuitarAmp, true)
+    end
+    
+    if GetWidgetValue(guitar_delay_button_array[guitar_preset]) == 1 then
+        SetPluginBypassed(GuitarDelay, false)
+        SetParameter(GuitarDelay, 1, GetWidgetValue(guitar_delay_time_array[guitar_preset]))
+        SetParameter(GuitarDelay, 6, GetWidgetValue(guitar_delay_feedback_array[guitar_preset]))
+        SetParameter(GuitarDelay, 7, GetWidgetValue(guitar_delay_mix_array[guitar_preset]))
+    else
+         SetPluginBypassed(GuitarDelay, true)
+    end
+    
+    if GetWidgetValue(guitar_reverb_button_array[guitar_preset]) == 1 then
+        SetPluginBypassed(GuitarReverb, false)
+        SetParameter(GuitarReverb, 3, GetWidgetValue(guitar_reverb_amount_array[guitar_preset]))
+        SetParameter(GuitarReverb, 1, GetWidgetValue(guitar_reverb_length_array[guitar_preset]))
+    else
+        SetPluginBypassed(GuitarReverb, true)
+    end
+end
+
+function switchGuitarPluginsOff()
+    var x: integer
+    
+    for x=0; x<Size(guitar_plugins_to_bypass); x=x+1 do
+        SetPluginBypassed(guitar_plugins_to_bypass[x], true)
+    end
+end
+
+function switchGuitarPreset()
+    var preset_label: string
+    var preset_index: integer
+    var x: integer
+    var status: integer
+    
+    preset_label = GetWidgetLabel(selected_guitar_preset)
+    preset_index = 1 - indexOfStringArray(preset_label_array, preset_label)
+    preset_label = preset_label_array[preset_index]
+
+    for x=0; x<2; x=x+1 do
+        status = x
+        if preset_index == 0 then
+            status = 1 - x
+        end
+        SetWidgetValue(guitar_background_array[x], status)
+        SetWidgetValue(guitar_background_number_array[x], status)
+    end
+    SetWidgetValue(guitar_preset_value, preset_index)
+
+    SetWidgetLabel(selected_guitar_preset, preset_label)
+    if GetWidgetValue(guitar_button) == 1 then
+        setGuitarPreset(StringToInt(preset_label) - 1)
+    end
+end
+
+function switchGuitarOff()
+    SetParameter(GuitarGain, 1, 1)
+    switchGuitarPluginsOff()
+end
+
+function switchOctaveOn()
+    if GetWidgetValue(block_bass_reverb) == 0 then
+        if GetWidgetValue(auto_bass_reverb) == 1 And GetWidgetValue(bass_reverb_button) == 1 then
+            bass_reverb_saved = true
+        end
+        SetWidgetValue(bass_reverb_button, 0)
+    end
+    SetParameter(GuitarGain, 0, GetWidgetValue(octave_amount))
+    SetParameter(GuitarGain, 1, 0)
+    SetPluginBypassed(GuitarAmp, true)
+    
+    SetPluginBypassed(GuitarPitch, false)
+    
+    SetParameter(GuitarReverb, 3, GetWidgetValue(octave_reverb_amount))
+    SetParameter(GuitarReverb, 1, GetWidgetValue(octave_reverb_length))
+    SetPluginBypassed(GuitarReverb, false)
+end
+
+function switchOctaveOff()
+    SetParameter(GuitarGain, 1, 1)
+    switchGuitarPluginsOff()
+    if bass_reverb_saved then
+        SetWidgetValue(bass_reverb_button, 1)
+        bass_reverb_saved = false
+    end
+end
+
+function switchGuitarOn()
+    SetParameter(GuitarGain, 1, 0)
+    SetPluginBypassed(GuitarPitch, false) 
+    setGuitarPreset(StringToInt(GetWidgetLabel(selected_guitar_preset)) - 1)
+end
+
+function setGuitarOff()
+    SetWidgetValue(guitar_button, 0)
+    switchGuitarOff()
+end
+
+function setOctaveOn()
+    SetWidgetValue(octave_button, 1)
+    switchOctaveOn()
+end
+
+function setOctaveOff()
+    SetWidgetValue(octave_button, 0)
+end
+
+function setKnobLabel(w: Widget, label_text:String, value: Integer, led_widget: Widget, led_on_value: Double, led_off_value: Double, label_before: boolean) Returns boolean
+    var label: String = label_text
+    var led_value: Double = led_on_value
+    var is_on: boolean
+    
+    is_on = false
+    if value > 0 then
+        label = label_text + " " + value
+        if !label_before then
+            label = "" + value + " " + label_text
+        end
+        led_value = led_off_value
+        is_on = true
+    end
+    SetWidgetLabel(w, label)
+    SetWidgetValue(led_widget, led_value)
+
+    result = is_on
+end
+
+function checkPlayerTracks()
+    var x: integer
+    var widget_is_on: boolean
+    var stop_button_value: double
+    
+    stop_button_value = filter_off_value
+    for x=0; x<Size(knob_widget_array); x=x+1 do
+        if x != 2 or number_of_tracks < 4 then
+            widget_is_on = setKnobLabel(knob_widget_array[x], knob_widget_label_array[x], Round(GetWidgetValue(knob_widget_array[x]) * knob_widget_range_array[x]), knob_widget_led_array[x], knob_widget_led_on_array[x], knob_widget_led_off_array[x], knob_widget_label_before[x])
+            if (x==0 or x==1) and widget_is_on then
+                stop_button_value = filter_on_value
+            end
+        end
+    end
+    SetWidgetValue(button_filter_10, stop_button_value)
+end
+
+function switchDelayedWidgetOn(widget_button: Widget)
+    SetWidgetValue(widget_button, 1)
+    delayed_widgets[Size(delayed_widgets)] = widget_button
+    start_time = TimeSinceStartup()
+end
+
+function switchButtonOn(widget_button: Widget)
+    SetWidgetValue(widget_button, 1)
+end
+
+function switchButtonOff(widget_button: Widget)
+    SetWidgetValue(widget_button, 0)
+end
+
+function switchButton(widget_button: Widget)
+    SetWidgetValue(widget_button, 1 - GetWidgetValue(widget_button))
+end
+
+function startPlayer(player_index: integer)
+    var audio_track : Integer
+
+    EnablePlayhead(true)
+    audio_track = Round(GetWidgetValue(play_track_array[player_index]) * audio_track_length)
+    if audio_track > 0 then
+        playAudioTrack(player_index, audio_track)
+    end
+end
+
+function setMidiFileLabel()
+    SetParameter(MidiFilePlayer, 0, ((GetWidgetValue(midi_player_track) - (1.0 / midi_track_length)) / 128) * midi_track_length)
+    if GetWidgetValue(midi_player_track) > 0 then
+        SetWidgetLabel(midi_file_player_label, "MIDI FILE")
+    else
+        SetWidgetLabel(midi_file_player_label, "")
+    end
+end
+
+function startMidiPlayer()
+    setTrackButtonOff(last_track_number)
+    last_track_number = -1
+    current_chord_number = 0
+    panel_chord_shift = 0
+    removePanelChords()
+    sendChordOffToMidiDevice(last_chord)
+    SetWidgetValue(button_D, 1)
+end
+
+function setMidiInstrument(newValue: double)
+    if GetWidgetValue(midi_channel) > 0 and newValue == 1 then
+        SetPluginBypassed(GuitarMidi, false)
+        SetPluginBypassed(OmnisphereInstrument, false)
+        SetParameter(MIDIGuitarChannel, 1, (GetWidgetValue(midi_channel) * 10 - 1) / 15)
+        //OpenPlugin(GuitarMidi)
+        //SetPluginEditorXYPosition(GuitarMidi, 0, 500)
+    else
+        SetPluginBypassed(GuitarMidi, true)
+        SetPluginBypassed(OmnisphereInstrument, true)
+        //ClosePlugin(GuitarMidi)
+    end
+end
+
+function setInstrumentFromPedal(newValue: double)
+    var value: integer = Round(newValue * 127)
+    
+    if events_allowed then
+        if value > 127 - pedal_margin_range then
+            switchButtonOn(guitar_button)
+        elsif value > pedal_margin_range then
+            switchButtonOff(octave_button)
+            switchButtonOff(guitar_button)
+            switchButtonOn(bass_button)
+        else
+            switchButtonOn(octave_button)
+        end
+    end
+end
+
+function setFootPedalFilter(newValue: double)
+    if newValue == 1 then
+        switchButtonOff(foot_pedal_filter)
+    else
+        switchButtonOn(foot_pedal_filter)
+    end
+end
+
+function setOutputVolumes(newValue: double)
+    var index: integer
+    var value: double
+    
+    value = newValue * 70.7 / 100
+    for index = 0; index < Size(output_volume_array); index = index + 1 do
+        SetWidgetValue(output_volume_array[index], value)
+    end
+end
+
+function startAllProcesses(new_var: int)
+    var default_preset: string = "1"
+    var x: integer
+    var tracks: integer array
+    var bypassed: boolean
+    var new_variation: string
+
+    if GetWidgetValue(guitar_preset_value) == 1 then
+        default_preset = "2"
+    end
+
+    setFootPedalFilter(GetWidgetValue(foot_pedal_switch))
+    
+    SetTimersRunning(true);
+
+    loadMidiFile()
+    new_variation = IntToString(new_var)
+    if InSetlistMode() then
+        new_variation = song_name + "-" + IntToString(GetCurrentSongPart())
+    end
+    last_variation = current_variation
+    current_variation = new_variation
+    last_track_number = -1
+
+    bass_reverb_saved = false
+    chord_player_triggered = -1
+
+    resetPlayers()
+    resetPanelChords()
+    
+    // bypass audio players we don't need
+    tracks = []
+    for x=0; x<2; x=x+1 do
+        tracks[x] = Round(GetWidgetValue(play_track_array[x]) * audio_track_length)
+    end
+    for x=0; x<12; x=x+1 do
+        bypassed = true
+        if IndexOf(tracks, x + 1) != -1 then
+            bypassed = false
+        end
+        SetPluginBypassed(song_player_array[x], bypassed)
+    end
+    // fin bypass
+    
+    if GetWidgetValue(guitar_button) == 1 then
+        switchGuitarOn()
+        //SetPluginBypassed(GuitarPitch, false) 
+        //setGuitarPreset(StringToInt(default_preset) - 1)
+    else
+        switchGuitarOff()
+    end
+    
+    setBassName()
+    SetWidgetLabel(selected_guitar_preset, default_preset)
+
+    if default_preset == "1" then
+        SetWidgetValue(guitar_background_1, 1)
+        SetWidgetValue(guitar_background_2, 0)
+        SetWidgetValue(guitar_background_number_1, 1)
+        SetWidgetValue(guitar_background_number_2, 0)
+    else
+        SetWidgetValue(guitar_background_1, 0)
+        SetWidgetValue(guitar_background_2, 1)
+        SetWidgetValue(guitar_background_number_1, 0)
+        SetWidgetValue(guitar_background_number_2, 1)
+    end
+
+    checkPlayerTracks()
+    setMidiFileLabel()
+    if GetWidgetValue(midi_player_track) > 0 then 
+        SetPluginBypassed(MidiFilePlayer, false) 
+    else 
+        SetPluginBypassed(MidiFilePlayer, true) 
+    end 
+
+    if current_variation == "Electroshock-5" then
+        // Final Electroshck audio
+        switchButtonOn(button_play_2)
+    end
+    if current_variation == "Another way around-1" or current_variation == "Another way around-3" then
+        // Another - reset & octave
+        switchDelayedWidgetOn(reset_button)
+    end
+    if current_variation == "Rita-1" or current_variation == "Rita-3" then
+        // Rita - reset
+        switchDelayedWidgetOn(reset_button)
+    end
+end
+
+// ================ EVENTS ================
+
+on Variation (old_var : Int, new_var : Int)
+    events_allowed = false
+    variation_time = TimeSinceStartup()
+    startAllProcesses(new_var)
+end
+
+on WidgetValueChanged (newValue : Double) from select_bass
+    setBassName()
+end
+
+on WidgetValueChanged (w: Widget, player_index: Integer, newValue : Double) from button_play_1, button_play_2
+    if newValue == 1 then
+        startPlayer(player_index)
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from reset_button
+    if newValue == 1 then
+        sendChordOffToMidiDevice(last_chord)
+        setTrackButtonsOff()
+        removePanelChords()
+        last_chord = []
+        //fullResetSequence()
+        stopMidiPlayer()
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from stop_button
+    if newValue == 1 then
+        resetPlayers()
+        EnablePlayhead(false)
+    end
+end
+
+on WidgetValueChanged (newValue: Double) From tuner_button
+    if newValue == 1 then
+        OpenPlugin(MTuner)
+        SetPluginEditorXYPosition(MTuner, 0, 0)
+    else
+        ClosePlugin(MTuner)
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from bass_button
+    if newValue == 0 then
+        if GetWidgetValue(octave_button) == 1 then
+            setOctaveOff()
+        end
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from octave_button
+    if newValue == 1 then
+        SetWidgetValue(bass_button, 1)
+        setGuitarOff()
+        switchOctaveOn()
+    elsif GetWidgetValue(guitar_button) == 0 then
+        switchOctaveOff()
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from guitar_button
+    if events_allowed then
+        if newValue == 1 then
+            setOctaveOff()
+            switchGuitarOn()
+            if GetWidgetValue(midi_channel) > 0 and GetWidgetValue(guitar_with_midi) == 1 then
+                switchButtonOn(midi_button)
+            end
+            SetWidgetValue(bass_button, 0)
+        elsif GetWidgetValue(octave_button) == 0 then
+            SetWidgetValue(bass_button, 1)
+            switchGuitarOff()
+            if GetWidgetValue(midi_channel) > 0 and GetWidgetValue(guitar_with_midi) == 1 then
+                switchButtonOff(midi_button)
+            end
+        end
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from special_button_1
+    if newValue == 1 then
+        OpenPlugin(GuitarMidi)
+        SetPluginEditorXYPosition(GuitarMidi, 0, 200)
+    else
+        ClosePlugin(GuitarMidi)
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from midi_button
+    setMidiInstrument(newValue)
+end
+
+on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
+    if newValue == 1 then
+        if track_index == 3 and GetWidgetValue(midi_player_track) > 0 then
+            SetParameter(MidiFilePlayer, 3, newValue)
+            SetParameter(MidiFilePlayer, 8, 1)
+        elsif chord_player_triggered < 0 then
+            playChordSequence(track_index)
+        end
+    end
+end
+
+on WidgetValueChanged (newValue: Double) from guitar_preset_button
+    if newValue == 1 then
+        switchGuitarPreset()
+    end
+end
+
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from block_bass_reverb, auto_bass_reverb
+    if newValue == 1 then
+        if index == 0 then
+            SetWidgetValue(auto_bass_reverb, 0)
+        else
+            SetWidgetValue(block_bass_reverb, 0)
+        end
+    end
+end
+
+on NoteOnEvent (m : NoteMessage) From MidiGuitarBlock
+    var effect: double = GetWidgetValue(guitar_midi_effect)
+    var velocity: double = GetVelocity(m)
+    var volume: double
+    var distance: double
+    var initial_volume: double = GetWidgetValue(midi_volume) * 127
+
+    distance = velocity - initial_volume
+    volume = (initial_volume + (distance * effect)) / 127
+    SetWidgetValue(midi_instrument_velocity, volume)
+end
+
+on ControlChangeEvent (cc : ControlChangeMessage) Matching [20..27] From TSMIDI_DCHA
+    var CC_number : Integer
+    var player_index, chord_player_index: integer
+
+    CC_number = GetCCNumber(cc)
+    if IndexOf(cc_reset, CC_number) != -1 then
+        switchDelayedWidgetOn(reset_button)
+    elsif IndexOf(cc_stop, CC_number) != -1 then
+        switchDelayedWidgetOn(stop_button)
+    elsif IndexOf(cc_chord, CC_number) != -1 then
+        chord_player_index = IndexOf(cc_chord, CC_number)
+        if chord_player_index == 3 and GetWidgetValue(midi_player_track) > 0 then
+            // midi file
+            if GetWidgetValue(button_letter_array[3]) == 1 then
+                // parar
+                SetParameter(MidiFilePlayer, 8, 0)
+                SetWidgetValue(button_D, 0)
+            else
+                // start
+                startMidiPlayer()
+            end
+        else
+            // boton A,B,C,(D)
+            if GetWidgetValue(midi_player_track) > 0 and GetWidgetValue(button_letter_array[3]) == 1 then
+                //stopMidiPlayer()
+                chord_player_triggered = chord_player_index
+                SetParameter(MidiFilePlayer, 8, 0)
+                //SetWidgetValue(button_D, 0)
+            end
+            SetWidgetValue(button_letter_array[chord_player_index], 0)
+            SetWidgetValue(button_letter_array[chord_player_index], 1)
+        end
+    elsif IndexOf(cc_play, CC_number) != -1 then
+        player_index = IndexOf(cc_play, CC_number)
+        SetWidgetValue(button_play_array[player_index], 1)
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from midi_file_playing
+    var chord_player_index: integer
+
+    if chord_player_triggered >= 0 and newValue == 0.0 then
+        chord_player_index = chord_player_triggered
+        chord_player_triggered = -1
+        SetWidgetValue(button_letter_array[chord_player_index], 0)
+        SetWidgetValue(button_letter_array[chord_player_index], 1)
+        SetWidgetValue(button_D, 0)
+    end
+end
+
+on WidgetValueChanged (newValue: double) from foot_pedal
+    if GetWidgetValue(foot_pedal_switch) == 1 then
+        if GetWidgetValue(use_pedal_as_volume) == 1 then
+            setOutputVolumes(newValue)
+        else
+            setInstrumentFromPedal(newValue)
+        end
+    end
+end
+
+on WidgetValueChanged (newValue: double) from foot_pedal_switch
+    setFootPedalFilter(newValue)
+end
+
+/*on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From TSMIDI_DCHA
+    setInstrumentFromPedal(GetCCValue(cc))
+end*/
+
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 20,21,22,24 From TSMIDI_IZDA
+    var CC_number : Integer = GetCCNumber(cc)
+
+    if CC_number == bass_cc then
+        switchButton(bass_button)
+    elsif CC_number == octave_cc then
+        switchButton(octave_button)
+    elsif CC_number == guitar_cc then
+        switchButton(guitar_button)
+    elsif CC_number == tuner_cc then
+        switchButton(tuner_button)
+    end
+end
+
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 26 From TSMIDI_IZDA
+    switchDelayedWidgetOn(guitar_preset_button)
+end
+
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZDA
+    var CC_number : Integer
+    var audio_track : Integer
+    var player_index: integer
+
+    CC_number = GetCCNumber(cc)
+
+    if CC_number == 25 then
+        switchButton(special_button_1)
+    end
+
+    if CC_number == 27 then
+        if GetWidgetValue(midi_channel) > 0 then
+            // MIDI
+            switchButton(midi_button)
+        end
+    end
+end
+
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 28 From MidiPipe
+    var part_midi_value: integer
+
+    if InSetlistMode() then
+        part_midi_value = GetCCValue(cc)
+        if (part_midi_value < current_midi_part_value and (part_midi_value <> 0 or current_midi_part_value <> 120)) or (part_midi_value == 120 and current_midi_part_value == 0) then
+            SongNextPart()
+        elsif part_midi_value > current_midi_part_value or (part_midi_value == 0 and current_midi_part_value == 120) then
+            SongPrevPart()
+        end
+        current_midi_part_value = part_midi_value
+    end
+end
+
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel
+    var rounded_value : Double
+    var new_value: Double
+    var steps: integer = knob_widget_range_array[index]
+
+    rounded_value = IntToFloat(Round(newValue * steps)) / steps
+    new_value = IntToFloat(Round(newValue * 10000000)) / 10000000
+    if new_value != rounded_value then
+        SetWidgetValue(w, IntToFloat(Round(new_value * steps)) / steps)
+        checkPlayerTracks()
+        if index == 2 then
+            setMidiFileLabel()
+        end
+    end
+end
+
+on BeatChanged(bar : integer, beat : integer)
+    var beat_change_at : integer
+    var current_beat : integer = (bar * 4 - 4) + beat - 1
+    var playing : integer
+    var x: integer
+    var max_time: integer
+
+    for x=0; x<Size(button_play_array); x=x+1 do
+        if GetWidgetValue(button_play_array[x]) == 1 then
+            max_time = Round(GetWidgetValue(player_length_array[x]) * knob_widget_range_array[x+3])
+            if current_beat >= max_time then
+                resetPlayers()
+            else
+                SetWidgetLabel(player_time_array[x], intToTimestamp(current_beat))
+                SetWidgetValue(player_fader_array[x], ((current_beat * 100) / max_time) / 100.0)
+                
+                beat_change_at = Round(GetWidgetValue(beat_a_array[x]) * 100)
+                if beat_change_at > 0 and beat_change_at == current_beat then
+                    SetWidgetValue(button_letter_array[0], 0)
+                    SetWidgetValue(button_letter_array[0], 1)
+                end
+            end
+        end
+    end
+end
+
+on TimerTick(ms : double)
+    var x: integer
+    if TimeSinceStartup() > start_time + 300 then
+        for x=0; x<Size(delayed_widgets); x=x+1 do
+            SetWidgetValue(delayed_widgets[x], 0)
+        end 
+        ClearArray(delayed_widgets)
+    end
+
+    if TimeSinceStartup() > variation_time + 500 then
+        events_allowed = true
+    end
+end
