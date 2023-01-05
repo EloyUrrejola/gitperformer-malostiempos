@@ -241,6 +241,8 @@ Initialization
     else
         SetVariation(0)
     end
+    SetTimeSignatureNumerator(4)
+    SetTimeSignatureDenominator(4)
     current_midi_part_value = 200
 end
 
