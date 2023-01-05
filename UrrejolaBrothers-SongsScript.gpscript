@@ -597,7 +597,8 @@ function playChord(track_number: Integer)
 
     if Size(current_chord) == 0 then
         setTrackButtonOff(track_number)
-        removePanelChords()
+        //removePanelChords()
+        resetPanelChords()
     end
     if current_chord_number > 0 then
         SetWidgetLabel(chord_name_array[track_number], chord_names[current_chord_number - 1])
@@ -996,7 +997,8 @@ on WidgetValueChanged (newValue : Double) from reset_button
     if newValue == 1 then
         sendChordOffToMidiDevice(last_chord)
         setTrackButtonsOff()
-        removePanelChords()
+        //removePanelChords()
+        resetPanelChords()
         last_chord = []
         //fullResetSequence()
         stopMidiPlayer()
