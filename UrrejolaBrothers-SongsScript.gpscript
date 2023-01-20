@@ -94,6 +94,7 @@ var knob_widget_range_array: integer array = [audio_track_length, audio_track_le
 var knob_widget_led_on_array: double array = [0.6, 0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
 var knob_widget_led_off_array: double array = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
 var knob_widget_label_before: boolean array = [true, true, true, false, false, true, true, false, false, true]
+var knob_widget_start_by_zero_array: boolean array = [false, false, false, false, false, false, false, true, true, false]
 
 var modern_chord_names: string array = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 var number_of_tracks : Integer
@@ -746,13 +747,16 @@ function setOctaveOff()
     SetWidgetValue(octave_button, 0)
 end
 
-function setKnobLabel(w: Widget, label_text:String, value: Integer, led_widget: Widget, led_on_value: Double, led_off_value: Double, label_before: boolean) Returns boolean
+function setKnobLabel(w: Widget, label_text:String, value: Integer, led_widget: Widget, led_on_value: Double, led_off_value: Double, label_before: boolean, start_by_zero: boolean) Returns boolean
     var label: String = label_text
     var led_value: Double = led_on_value
     var is_on: boolean
     
     is_on = false
     if value > 0 then
+        if start_by_zero then
+            value = value - 1
+        end
         label = label_text + " " + value
         if !label_before then
             label = "" + value + " " + label_text
@@ -774,7 +778,7 @@ function checkPlayerTracks()
     stop_button_value = filter_off_value
     for x=0; x<Size(knob_widget_array); x=x+1 do
         if x != 2 or number_of_tracks < 4 then
-            widget_is_on = setKnobLabel(knob_widget_array[x], knob_widget_label_array[x], Round(GetWidgetValue(knob_widget_array[x]) * knob_widget_range_array[x]), knob_widget_led_array[x], knob_widget_led_on_array[x], knob_widget_led_off_array[x], knob_widget_label_before[x])
+            widget_is_on = setKnobLabel(knob_widget_array[x], knob_widget_label_array[x], Round(GetWidgetValue(knob_widget_array[x]) * knob_widget_range_array[x]), knob_widget_led_array[x], knob_widget_led_on_array[x], knob_widget_led_off_array[x], knob_widget_label_before[x], knob_widget_start_by_zero_array[x])
             if (x==0 or x==1) and widget_is_on then
                 stop_button_value = filter_on_value
             end
@@ -1277,8 +1281,8 @@ on BeatChanged(bar : integer, beat : integer)
                 SetWidgetLabel(player_time_array[x], intToTimestamp(current_beat))
                 SetWidgetValue(player_fader_array[x], ((current_beat * 100) / max_time) / 100.0)
                 
-                beat_change_at = Round(GetWidgetValue(beat_a_array[x]) * 100)
-                if beat_change_at > 0 and beat_change_at == current_beat then
+                beat_change_at = Round(GetWidgetValue(beat_a_array[x]) * 100) - 1 // -1 porque empieza en 0
+                if beat_change_at >= 0 and beat_change_at == current_beat then
                     SetWidgetValue(button_letter_array[0], 0)
                     SetWidgetValue(button_letter_array[0], 1)
                 end
