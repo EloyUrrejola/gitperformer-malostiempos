@@ -106,6 +106,8 @@ var cc_chord : Integer Array = [20, 21, 22, 23]
 var cc_reset : Integer Array = [24]
 var cc_stop : Integer Array = [27]
 var cc_play : Integer Array = [25, 26]
+var cc_page_left : Integer = 28
+var cc_page_right : Integer = 29
 var last_track_number : Integer = -1
 var last_chord : MidiMessage Array = []
 var current_chord_number: integer = 0
@@ -129,7 +131,9 @@ var chord_positions: integer array
 var chord_lengths: integer array
 var chord_names: string array
 var current_letter_index: integer
-var current_midi_part_value: integer
+
+var page_cc: Integer Array = [28, 29]
+var current_midi_page_array: integer array = [200, 200]
 
 // chord panel
 var panel_chord_1, panel_chord_2, panel_chord_3, panel_chord_4, panel_chord_5, panel_chord_6, panel_chord_7, panel_chord_8, panel_chord_9, panel_chord_10, panel_chord_11, panel_chord_12, panel_chord_13, panel_chord_14, panel_chord_15, panel_chord_16: widget
@@ -244,7 +248,7 @@ Initialization
     end
     SetTimeSignatureNumerator(4)
     SetTimeSignatureDenominator(4)
-    current_midi_part_value = 200
+    //current_midi_page_value = 200
 end
 
 function setTrackButtonOff(track_number: integer)
@@ -1235,17 +1239,48 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 25,27 From TSMIDI_IZD
     end
 end
 
-on ControlChangeEvent (cc : ControlChangeMessage) Matching 28 From MidiPipe
-    var part_midi_value: integer
+function isNext(cc_index : integer, cc_value : integer) returns boolean
+    var current_value : integer = current_midi_page_array[cc_index]
+    var response : boolean = false
 
-    if InSetlistMode() then
-        part_midi_value = GetCCValue(cc)
-        if (part_midi_value < current_midi_part_value and (part_midi_value <> 0 or current_midi_part_value <> 120)) or (part_midi_value == 120 and current_midi_part_value == 0) then
-            SongNextPart()
-        elsif part_midi_value > current_midi_part_value or (part_midi_value == 0 and current_midi_part_value == 120) then
-            SongPrevPart()
+    if (cc_value < current_value and (cc_value <> 0 or current_value <> 120)) or (cc_value == 120 and current_value == 0) then
+        response = true
+    end
+
+    result = response
+end
+function isPrev(cc_index : integer, cc_value : integer) returns boolean
+    var current_value : integer = current_midi_page_array[cc_index]
+    var response : boolean = false
+
+    if cc_value > current_value or (cc_value == 0 and current_value == 120) then
+        response = true
+    end
+
+    result = response
+end
+on ControlChangeEvent (cc : ControlChangeMessage) Matching 28,29 From MidiPipe
+    var cc_number : integer = GetCCNumber(cc)
+    var cc_index : integer = IndexOf(page_cc, cc_number)
+    var cc_value : integer = GetCCValue(cc)
+
+    if cc_number == cc_page_left then
+        if InSetlistMode() then
+            if isNext(cc_index, cc_value) then
+                SongNextPart()
+            elsif isPrev(cc_index, cc_value) then
+                SongPrevPart()
+            end
+            current_midi_page_array[cc_index] = cc_value
         end
-        current_midi_part_value = part_midi_value
+    end
+    if cc_number == cc_page_right then
+        if isNext(cc_index, cc_value) then
+            SetWidgetValue(audio_volume, GetWidgetValue(audio_volume) - 0.05)
+        elsif isPrev(cc_index, cc_value) then
+            SetWidgetValue(audio_volume, GetWidgetValue(audio_volume) + 0.05)
+        end
+        current_midi_page_array[cc_index] = cc_value
     end
 end
 
