@@ -1041,11 +1041,11 @@ on WidgetValueChanged (newValue : Double) from stop_button
         resetPlayers()
         EnablePlayhead(false)
         // reset
-        sendChordOffToMidiDevice(last_chord)
-        setTrackButtonsOff()
-        resetPanelChords()
-        last_chord = []
-        stopMidiPlayer()
+        //sendChordOffToMidiDevice(last_chord)
+        //setTrackButtonsOff()
+        //resetPanelChords()
+        //last_chord = []
+        //stopMidiPlayer()
     end
 end
 
