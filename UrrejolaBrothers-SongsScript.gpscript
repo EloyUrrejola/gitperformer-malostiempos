@@ -79,6 +79,7 @@ var guitar_background_array: widget array = [guitar_background_1, guitar_backgro
 var guitar_background_number_array: widget array = [guitar_background_number_1, guitar_background_number_2]
 
 var foot_pedal, foot_pedal_switch, foot_pedal_filter: widget
+var auto_move, auto_fade_in: widget
 
 var chord_name_1, chord_name_2, chord_name_3, chord_name_4: widget
 var chord_name_array: widget array = [chord_name_1, chord_name_2, chord_name_3, chord_name_4]
@@ -1117,6 +1118,9 @@ on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from b
             SetParameter(MidiFilePlayer, 8, 0)
         elsif chord_player_triggered < 0 then
             playChordSequence(track_index)
+        end
+        if track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
+            switchButtonOn(auto_move)
         end
     end
 end
