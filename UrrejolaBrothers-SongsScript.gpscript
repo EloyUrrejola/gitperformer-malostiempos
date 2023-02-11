@@ -18,7 +18,7 @@ var button_letter_array: widget array = [button_A, button_B, button_C, button_D]
 var button_play_1, button_play_2: widget
 var button_play_array: widget array = [button_play_1, button_play_2]
 
-var button_filter_2, button_filter_4, button_filter_9, button_filter_10, button_filter_13, button_filter_14, button_filter_15, button_filter_16: widget
+var button_filter_4, button_filter_9, button_filter_10, button_filter_13, button_filter_14, button_filter_15, button_filter_16: widget
 var button_filter_array: widget array = [button_filter_13, button_filter_14, button_filter_15, button_filter_16]
 
 var tuner_button, bass_button, octave_button, guitar_button, octave_amount: widget
