@@ -33,6 +33,7 @@ var cc_stop : Integer array = [87]
 var cc_play : Integer array = [85,86]
 var cc_page_next : Integer = 30
 var cc_page_prev : Integer = 88
+var cc_set_song : Integer = 90
 
 var GuitarGain, GuitarPitch, GuitarAmp, GuitarDelay, GuitarReverb, GuitarMidi, MIDIGuitarChannel: PluginBlock
 var guitar_plugins_to_bypass: PluginBlock array = [GuitarPitch]
@@ -98,6 +99,8 @@ var special_button_1, midi_button: widget
 var midi_channel, midi_volume: widget
 
 var out_mode, out_midi_L, out_midi_R, out_bass_L, out_bass_R: widget
+
+var audio_fade_out, start_fade_out, audio_volume_auto: widget
 
 var audio_track_length: integer = 20
 var midi_track_length: integer = 20
@@ -895,6 +898,14 @@ function startMidiPlayer()
     SetWidgetValue(midi_file_playing, 1) // al cambiar de parte a veces no se activa
 end
 
+function reset()
+    sendChordOffToMidiDevice(last_chord)
+    setTrackButtonsOff()
+    resetPanelChords()
+    last_chord = []
+    stopMidiPlayer()
+end
+
 function setInstrumentFromPedal(newValue: double)
     var value: integer = Round(newValue * 127)
     
@@ -1063,11 +1074,17 @@ end
 
 on WidgetValueChanged (newValue : Double) from reset_button
     if newValue == 1 then
-        sendChordOffToMidiDevice(last_chord)
-        setTrackButtonsOff()
-        resetPanelChords()
-        last_chord = []
-        stopMidiPlayer()
+        if GetWidgetValue(audio_fade_out) == 1 then
+            SetWidgetValue(start_fade_out, 1)
+        else
+            reset()
+        end
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from audio_volume_auto
+    if newValue < 0.3 then
+        reset()
     end
 end
 
@@ -1152,6 +1169,9 @@ on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from b
             chord_player_triggered = track_index
             SetParameter(MidiFilePlayer, 8, 0)
         elsif chord_player_triggered < 0 then
+            if GetWidgetValue(audio_fade_out) == 1 then
+                ResetWidgetValue(audio_volume_auto)
+            end
             playChordSequence(track_index)
         end
         if track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
@@ -1186,6 +1206,16 @@ on NoteOnEvent (m : NoteMessage) From MidiGuitarBlock
     distance = velocity - initial_volume
     volume = (initial_volume + (distance * effect)) / 127
     SetWidgetValue(midi_instrument_velocity, volume)
+end
+
+//on ControlChangeEvent (cc : ControlChangeMessage) Matching 90 From UrrejolaPedalboard
+on ProgramChangeEvent(pc : ProgramChangeMessage) From UrrejolaPedalboard
+    var pc_number: integer = GetProgramChangeNumber(pc)
+    var switched : boolean
+
+    if InSetlistMode() then
+        switched = SwitchToSongByIndex(pc_number, 0) 
+    end
 end
 
 on ControlChangeEvent (cc : ControlChangeMessage) Matching 26,27,28,29,31,85,86,87 From UrrejolaPedalboard
@@ -1360,7 +1390,7 @@ end
 
 on TimerTick(ms : double)
     var x: integer
-    if TimeSinceStartup() > start_time + 300 then
+    if TimeSinceStartup() > start_time + 1000 then
         for x=0; x<Size(delayed_widgets); x=x+1 do
             SetWidgetValue(delayed_widgets[x], 0)
         end 
