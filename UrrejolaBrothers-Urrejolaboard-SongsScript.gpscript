@@ -60,6 +60,7 @@ var player_length_1, player_length_2, player_length_led_1, player_length_led_2: 
 var player_length_array: widget array = [player_length_1, player_length_2]
 var reset_button, stop_button: widget
 var audio_volume: widget
+var send_setlist: widget
 
 var guitar_delay_button_1, guitar_amp_button_1, guitar_reverb_button_1: widget
 var guitar_delay_time_1, guitar_delay_feedback_1, guitar_delay_mix_1, guitar_amp_preset_1, guitar_reverb_amount_1, guitar_reverb_length_1: widget
@@ -953,13 +954,22 @@ function sendSetlist()
     sendSysexMessage("list:" + song_list)
 end
 
+function sendSongAndPart()
+    var song_and_part: string
+
+    song_and_part = "" + GetCurrentSongIndex()
+    if GetSongPartCount() > 1 then
+        song_and_part = song_and_part + "-" + IntToString(GetCurrentSongPart()+1) + " / " + GetCurrentSongPartName()
+    end
+    sendSysexMessage("song:" + song_and_part)
+end
+
 function startAllProcesses(new_var: int)
     var default_preset: string = "1"
     var x: integer
     var tracks: integer array
     var bypassed: boolean
     var new_variation: string
-    var song_and_part: string
 
     if GetWidgetValue(guitar_preset_value) == 1 then
         default_preset = "2"
@@ -974,18 +984,13 @@ function startAllProcesses(new_var: int)
     loadMidiFile()
     new_variation = IntToString(new_var)
     if InSetlistMode() then
-
         if current_setlist != GetCurrentSetlistName() then
             current_setlist = GetCurrentSetlistName()
             sendSetlist()
         end
 
         new_variation = song_name + "-" + IntToString(GetCurrentSongPart())
-        song_and_part = "" + GetCurrentSongIndex()
-        if GetSongPartCount() > 1 then
-            song_and_part = song_and_part + "-" + IntToString(GetCurrentSongPart()+1) + " / " + GetCurrentSongPartName()
-        end
-        sendSysexMessage("song:" + song_and_part)
+        sendSongAndPart()
     end
     last_variation = current_variation
     current_variation = new_variation
@@ -1303,6 +1308,14 @@ end
 
 on WidgetValueChanged (newValue: double) from foot_pedal_switch
     setFootPedalFilter(newValue)
+end
+
+on WidgetValueChanged (newValue: double) from send_setlist
+    if newValue == 1 and InSetlistMode() then
+        sendSetlist()
+        sendSongAndPart()
+        switchButtonOff(send_setlist);
+    end
 end
 
 /*on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From UrrejolaPedalboard
