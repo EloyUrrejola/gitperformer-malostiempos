@@ -942,7 +942,7 @@ function setOutputVolumes(newValue: double)
 end
 
 function sendSetlist()
-    var song_list: string
+    var song_list: string = ""
     var x: integer
 
     for x=0; x<GetSongCount(); x=x+1 do
@@ -951,7 +951,7 @@ function sendSetlist()
         end
         song_list = song_list + GetSongName(x)
     end
-    sendSysexMessage("list:" + song_list)
+    sendSysexMessage("list:" + GetCurrentSetlistName() + "%" + song_list)
 end
 
 function sendSongAndPart()
