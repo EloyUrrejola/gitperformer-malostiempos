@@ -11,8 +11,8 @@ var cycle_array: widget array = [cycle_1, cycle_2, cycle_3, cycle_4]
 var chord_root_1, chord_root_2, chord_root_3, chord_root_4: widget
 var chord_root_array: widget array = [chord_root_1, chord_root_2, chord_root_3, chord_root_4]
 
-var output_volume_1, output_volume_2, output_volume_3, output_volume_4, use_pedal_as_volume: widget
-var output_volume_array: widget array = [output_volume_1, output_volume_2, output_volume_3, output_volume_4]
+var output_volume_1, output_volume_2, output_volume_3, output_volume_4, output_volume_5, output_volume_6, use_pedal_as_volume: widget
+var output_volume_array: widget array = [output_volume_1, output_volume_2, output_volume_3, output_volume_4, output_volume_5, output_volume_6]
 
 var button_A, button_B, button_C, button_D: widget
 var button_letter_array: widget array = [button_A, button_B, button_C, button_D]
@@ -37,7 +37,7 @@ var cc_page_prev : Integer = 88
 var cc_next_song : Integer = 91
 var cc_set_song : Integer = 90
 
-var GuitarGain, GuitarPitch, GuitarAmp, GuitarDelay, GuitarReverb, GuitarMidi, MIDIGuitarChannel: PluginBlock
+var GuitarGain, GuitarPitch, /*GuitarAmp,*/ GuitarDelay, GuitarReverb, GuitarMidi, GuitarWah, MIDIGuitarChannel: PluginBlock
 var guitar_plugins_to_bypass: PluginBlock array = [GuitarPitch]
 var midi_instrument_velocity, guitar_midi_effect: widget
 
@@ -61,34 +61,12 @@ var player_time_array: widget array = [player_time_1, player_time_2]
 var player_length_1, player_length_2, player_length_led_1, player_length_led_2: widget
 var player_length_array: widget array = [player_length_1, player_length_2]
 var reset_button, stop_button: widget
-var audio_volume: widget
 var send_setlist: widget
 
-var guitar_delay_button_1, guitar_amp_button_1, guitar_reverb_button_1: widget
-var guitar_delay_time_1, guitar_delay_feedback_1, guitar_delay_mix_1, guitar_amp_preset_1, guitar_reverb_amount_1, guitar_reverb_length_1: widget
-var guitar_delay_button_2, guitar_amp_button_2, guitar_reverb_button_2: widget
-var guitar_delay_time_2, guitar_delay_feedback_2, guitar_delay_mix_2, guitar_amp_preset_2, guitar_reverb_amount_2, guitar_reverb_length_2: widget
-var guitar_midi_button_1, guitar_midi_button_2: widget
-
-var guitar_delay_button_array: widget array = [guitar_delay_button_1, guitar_delay_button_2]
-var guitar_amp_button_array: widget array = [guitar_amp_button_1, guitar_amp_button_2]
-var guitar_reverb_button_array: widget array = [guitar_reverb_button_1, guitar_reverb_button_2]
-var guitar_delay_time_array: widget array = [guitar_delay_time_1, guitar_delay_time_2]
-var guitar_delay_feedback_array: widget array = [guitar_delay_feedback_1, guitar_delay_feedback_2]
-var guitar_delay_mix_array: widget array = [guitar_delay_mix_1, guitar_delay_mix_2]
-var guitar_amp_preset_array: widget array = [guitar_amp_preset_1, guitar_amp_preset_2]
-var guitar_reverb_amount_array: widget array = [guitar_reverb_amount_1, guitar_reverb_amount_2]
-var guitar_reverb_length_array: widget array = [guitar_reverb_length_1, guitar_reverb_length_2]
-var guitar_midi_button_array: widget array = [guitar_midi_button_1, guitar_midi_button_2]
-
-var guitar_volume_1, guitar_volume_2: widget
-var guitar_volume_array: widget array = [guitar_volume_1, guitar_volume_2]
+var guitar_delay_button, guitar_amp_button, guitar_reverb_button, guitar_delay_time, guitar_delay_feedback: widget
+var guitar_delay_mix, guitar_amp_preset, guitar_reverb_amount, guitar_reverb_length, guitar_midi_button: widget
+var guitar_volume, guitar_background, guitar_wah_button, guitar_wah_depth: widget
 var guitar_with_midi: widget
-
-var guitar_preset_button, selected_guitar_preset, guitar_preset_value: widget
-var guitar_background_1, guitar_background_2, guitar_background_number_1, guitar_background_number_2: widget
-var guitar_background_array: widget array = [guitar_background_1, guitar_background_2]
-var guitar_background_number_array: widget array = [guitar_background_number_1, guitar_background_number_2]
 
 var foot_pedal, foot_pedal_switch, foot_pedal_filter: widget
 var auto_move, auto_fade_in: widget
@@ -99,7 +77,9 @@ var next_chord_name_1, next_chord_name_2, next_chord_name_3, next_chord_name_4: 
 var next_chord_name_array: widget array = [next_chord_name_1, next_chord_name_2, next_chord_name_3, next_chord_name_4]
 
 var special_button_1, midi_button: widget
-var midi_channel, midi_volume: widget
+var midi_channel, midi_volume, midi_alt_bass: widget
+
+var midi_mixer_volume: widget
 
 var out_mode, out_midi_L, out_midi_R, out_bass_L, out_bass_R: widget
 
@@ -107,14 +87,14 @@ var audio_fade_out, start_fade_out, audio_volume_auto: widget
 
 var audio_track_length: integer = 20
 var midi_track_length: integer = 20
-var knob_widget_array: widget array = [play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel]
-var knob_widget_label_array: string array = ["tr", "tr", "tr", "s", "s", "preset", "preset", "s", "s", "ch"]
-var knob_widget_led_array: widget array = [player_1_led, player_2_led, button_filter_16, player_length_led_1, player_length_led_2, guitar_amp_button_1, guitar_amp_button_2, beat_A_led_1, beat_A_led_2, button_filter_4]
-var knob_widget_range_array: integer array = [audio_track_length, audio_track_length, midi_track_length, 100, 100, 10, 10, 100, 100, 10]
-var knob_widget_led_on_array: double array = [0.6, 0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
-var knob_widget_led_off_array: double array = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-var knob_widget_label_before: boolean array = [true, true, true, false, false, true, true, false, false, true]
-var knob_widget_start_by_zero_array: boolean array = [false, false, false, false, false, false, false, true, true, false]
+var knob_widget_array: widget array = [play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset, beat_a_1, beat_a_2, midi_channel]
+var knob_widget_label_array: string array = ["tr", "tr", "tr", "s", "s", "preset", "s", "s", "ch"]
+var knob_widget_led_array: widget array = [player_1_led, player_2_led, button_filter_16, player_length_led_1, player_length_led_2, guitar_amp_button, beat_A_led_1, beat_A_led_2, button_filter_4]
+var knob_widget_range_array: integer array = [audio_track_length, audio_track_length, midi_track_length, 100, 100, 10, 100, 100, 10]
+var knob_widget_led_on_array: double array = [0.6, 0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+var knob_widget_led_off_array: double array = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+var knob_widget_label_before: boolean array = [true, true, true, false, false, true, false, false, true]
+var knob_widget_start_by_zero_array: boolean array = [false, false, false, false, false, false, true, true, false]
 
 var modern_chord_names: string array = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 var number_of_tracks : Integer
@@ -127,7 +107,6 @@ var current_chord_number: integer = 0
 var last_variation : string = "-1"
 var current_variation, current_setlist : string
 var bass_reverb_saved: Boolean = false
-var preset_label_array: String array = ["1", "2"]
 var filter_off_value: double = 0.6
 var filter_on_value: double = 0.0
 var letters: string array = ["A", "B", "C", "D"]
@@ -162,6 +141,7 @@ var panel_chord_columns: integer = 8
 
 var letter_array: string array
 var pedal_margin_range: integer = 4
+var general_midi_volume: double;
 
 function indexOfStringArray(text: string array, search: string) returns integer
     var x: integer
@@ -703,40 +683,47 @@ function setMidiInstrument(newValue: double)
     end
 end
 
-function sendGuitarAmpPreset(preset_value: Double)
+/*function sendGuitarAmpPreset(preset_value: Double)
     SendNow(UrrejolaPedalboard, MakeProgramChangeMessage(Round(preset_value * 10)))
-end
+end*/
 
-function setGuitarPreset(guitar_preset: integer)
-    SetParameter(GuitarGain, 0, GetWidgetValue(guitar_volume_array[guitar_preset]))
-    if GetWidgetValue(guitar_amp_button_array[guitar_preset]) == 1 then
+function setGuitarPreset()
+    SetParameter(GuitarGain, 0, GetWidgetValue(guitar_volume))
+    /*if GetWidgetValue(guitar_amp_button) == 1 then
         SetPluginBypassed(GuitarAmp, false)
-        sendGuitarAmpPreset(GetWidgetValue(guitar_amp_preset_array[guitar_preset]))
+        sendGuitarAmpPreset(GetWidgetValue(guitar_amp_preset))
     else
         SetPluginBypassed(GuitarAmp, true)
-    end
+    end*/
     
-    if GetWidgetValue(guitar_delay_button_array[guitar_preset]) == 1 then
+    if GetWidgetValue(guitar_delay_button) == 1 then
         SetPluginBypassed(GuitarDelay, false)
-        SetParameter(GuitarDelay, 1, GetWidgetValue(guitar_delay_time_array[guitar_preset]))
-        SetParameter(GuitarDelay, 6, GetWidgetValue(guitar_delay_feedback_array[guitar_preset]))
-        SetParameter(GuitarDelay, 7, GetWidgetValue(guitar_delay_mix_array[guitar_preset]))
+        SetParameter(GuitarDelay, 1, GetWidgetValue(guitar_delay_time))
+        SetParameter(GuitarDelay, 6, GetWidgetValue(guitar_delay_feedback))
+        SetParameter(GuitarDelay, 7, GetWidgetValue(guitar_delay_mix))
     else
          SetPluginBypassed(GuitarDelay, true)
     end
     
-    if GetWidgetValue(guitar_reverb_button_array[guitar_preset]) == 1 then
+    if GetWidgetValue(guitar_reverb_button) == 1 then
         SetPluginBypassed(GuitarReverb, false)
-        SetParameter(GuitarReverb, 3, GetWidgetValue(guitar_reverb_amount_array[guitar_preset]))
-        SetParameter(GuitarReverb, 1, GetWidgetValue(guitar_reverb_length_array[guitar_preset]))
+        SetParameter(GuitarReverb, 3, GetWidgetValue(guitar_reverb_amount))
+        SetParameter(GuitarReverb, 1, GetWidgetValue(guitar_reverb_length))
     else
         SetPluginBypassed(GuitarReverb, true)
     end
 
-    if GetWidgetValue(guitar_midi_button_array[guitar_preset]) == 1 then
+    if GetWidgetValue(guitar_midi_button) == 1 then
         switchButtonOn(midi_button)
     else
         switchButtonOff(midi_button)
+    end
+    
+    if GetWidgetValue(guitar_wah_button) == 1 then
+        SetPluginBypassed(GuitarWah, false)
+        SetParameter(GuitarWah, 6, GetWidgetValue(guitar_wah_depth))
+    else
+        SetPluginBypassed(GuitarWah, true)
     end
 end
 
@@ -745,32 +732,6 @@ function switchGuitarPluginsOff()
     
     for x=0; x<Size(guitar_plugins_to_bypass); x=x+1 do
         SetPluginBypassed(guitar_plugins_to_bypass[x], true)
-    end
-end
-
-function switchGuitarPreset()
-    var preset_label: string
-    var preset_index: integer
-    var x: integer
-    var status: integer
-    
-    preset_label = GetWidgetLabel(selected_guitar_preset)
-    preset_index = 1 - indexOfStringArray(preset_label_array, preset_label)
-    preset_label = preset_label_array[preset_index]
-
-    for x=0; x<2; x=x+1 do
-        status = x
-        if preset_index == 0 then
-            status = 1 - x
-        end
-        SetWidgetValue(guitar_background_array[x], status)
-        SetWidgetValue(guitar_background_number_array[x], status)
-    end
-    SetWidgetValue(guitar_preset_value, preset_index)
-
-    SetWidgetLabel(selected_guitar_preset, preset_label)
-    if GetWidgetValue(guitar_button) == 1 then
-        setGuitarPreset(StringToInt(preset_label) - 1)
     end
 end
 
@@ -788,7 +749,7 @@ function switchOctaveOn()
     end
     SetParameter(GuitarGain, 0, GetWidgetValue(octave_amount))
     SetParameter(GuitarGain, 1, 0)
-    SetPluginBypassed(GuitarAmp, true)
+    //SetPluginBypassed(GuitarAmp, true)
     
     SetPluginBypassed(GuitarPitch, false)
     
@@ -809,7 +770,7 @@ end
 function switchGuitarOn()
     SetParameter(GuitarGain, 1, 0)
     SetPluginBypassed(GuitarPitch, false)
-    setGuitarPreset(Round(GetWidgetValue(guitar_preset_value)))
+    setGuitarPreset()
 end
 
 function setGuitarOff()
@@ -932,14 +893,18 @@ function setFootPedalFilter(newValue: double)
     end
 end
 
-function setOutputVolumes(newValue: double)
+function setMidiVolume(newValue: double)
     var index: integer
     var value: double
     
-    value = newValue * 70.7 / 100
-    for index = 0; index < Size(output_volume_array); index = index + 1 do
-        SetWidgetValue(output_volume_array[index], value)
+    Print(newValue)
+    Print(general_midi_volume)
+    value = 0
+    if newValue > 0 then
+        value = newValue * general_midi_volume
     end
+    Print(value)
+    SetWidgetValue(midi_mixer_volume, value)
 end
 
 function sendSetlist()
@@ -965,16 +930,36 @@ function sendSongAndPart()
     sendSysexMessage("song:" + song_and_part)
 end
 
+function chordButtonPressed(track_index: int)
+    SetWidgetValue(button_letter_array[track_index], 1)
+    if GetWidgetValue(foot_pedal) > 0 and track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
+        general_midi_volume = 0.707
+    //SetWidgetCurveValue(midi_mixer_volume, 1.0, 0.2)
+        SetWidgetValue(foot_pedal, 0)
+    else
+        if track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
+            switchButtonOn(auto_move)
+            switchButtonOff(auto_fade_in)
+        end
+        if track_index == 3 and GetWidgetValue(midi_player_track) > 0 then
+            startMidiPlayer()
+        elsif GetWidgetValue(midi_player_track) > 0 and GetWidgetValue(button_letter_array[3]) == 1 then
+            chord_player_triggered = track_index
+            SetParameter(MidiFilePlayer, 8, 0)
+        elsif chord_player_triggered < 0 then
+            if GetWidgetValue(audio_fade_out) == 1 then
+                ResetWidgetValue(audio_volume_auto)
+            end
+            playChordSequence(track_index)
+        end
+    end
+end
+
 function startAllProcesses(new_var: int)
-    var default_preset: string = "1"
     var x: integer
     var tracks: integer array
     var bypassed: boolean
     var new_variation: string
-
-    if GetWidgetValue(guitar_preset_value) == 1 then
-        default_preset = "2"
-    end
 
     setFootPedalFilter(GetWidgetValue(foot_pedal_switch))
     
@@ -1025,19 +1010,6 @@ function startAllProcesses(new_var: int)
     end
     
     setBassName()
-    SetWidgetLabel(selected_guitar_preset, default_preset)
-
-    if default_preset == "1" then
-        SetWidgetValue(guitar_background_1, 1)
-        SetWidgetValue(guitar_background_2, 0)
-        SetWidgetValue(guitar_background_number_1, 1)
-        SetWidgetValue(guitar_background_number_2, 0)
-    else
-        SetWidgetValue(guitar_background_1, 0)
-        SetWidgetValue(guitar_background_2, 1)
-        SetWidgetValue(guitar_background_number_1, 0)
-        SetWidgetValue(guitar_background_number_2, 1)
-    end
 
     checkPlayerTracks()
     setMidiFileLabel()
@@ -1045,7 +1017,7 @@ function startAllProcesses(new_var: int)
         SetPluginBypassed(MidiFilePlayer, false) 
     else 
         SetPluginBypassed(MidiFilePlayer, true) 
-    end 
+    end
 
     if current_variation == "Terrenal-1" then
         // player 1
@@ -1054,7 +1026,11 @@ function startAllProcesses(new_var: int)
     if current_variation == "Terrenal-2" then
         // stop midi file & press guitar button to unselect it
         switchGuitarOff()
-        switchButtonOn(button_A)
+        chordButtonPressed(0)
+    end
+    if current_variation == "Etiopía-1" then
+        // stop audio
+        switchDelayedWidgetOn(stop_button)
     end
     if current_variation == "Etiopía-6" then
         // Final Etiopía audio
@@ -1064,10 +1040,13 @@ function startAllProcesses(new_var: int)
         // stop chords
         switchDelayedWidgetOn(reset_button)
     end
+    if current_variation == "Electroshock-1" or current_variation == "Electroshock-3" or current_variation == "Electroshock-5" then
+        // stop chords
+        switchDelayedWidgetOn(reset_button)
+    end
     if current_variation == "Electroshock-5" then
         // Final Electroshck audio
         switchButtonOn(button_play_2)
-        switchDelayedWidgetOn(reset_button)
     end
     if current_variation == "Another way around-1" or current_variation == "Another way around-3" then
         // Another - reset & octave
@@ -1075,9 +1054,9 @@ function startAllProcesses(new_var: int)
     end
     /*if current_variation == "Another way around-3" then
         // Another solo - reset chords & start midi file
-        switchButtonOn(button_D)
+        chordButtonPressed(3)
     end*/
-    if current_variation == "Rita-1" or current_variation == "Rita-3" then
+    if current_variation == "Rita-1" or current_variation == "Rita-4" then
         // Rita - reset
         switchDelayedWidgetOn(reset_button)
     end
@@ -1192,26 +1171,7 @@ end
 
 on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
     if newValue == 1 then
-        if track_index == 3 and GetWidgetValue(midi_player_track) > 0 then
-            startMidiPlayer()
-        elsif GetWidgetValue(midi_player_track) > 0 and GetWidgetValue(button_letter_array[3]) == 1 then
-            chord_player_triggered = track_index
-            SetParameter(MidiFilePlayer, 8, 0)
-        elsif chord_player_triggered < 0 then
-            if GetWidgetValue(audio_fade_out) == 1 then
-                ResetWidgetValue(audio_volume_auto)
-            end
-            playChordSequence(track_index)
-        end
-        if track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
-            switchButtonOn(auto_move)
-        end
-    end
-end
-
-on WidgetValueChanged (newValue: Double) from guitar_preset_button
-    if newValue == 1 then
-        switchGuitarPreset()
+        //chordButtonPressed(track_index)
     end
 end
 
@@ -1266,16 +1226,11 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 26,27,28,29,31,85,86,
                 SetWidgetValue(button_D, 0)
             else
                 // start
-                SetWidgetValue(button_D, 1)
+                chordButtonPressed(chord_player_index)
             end
         else
             // boton A,B,C,(D)
-            //if GetWidgetValue(midi_player_track) > 0 and GetWidgetValue(button_letter_array[3]) == 1 then
-            //    chord_player_triggered = chord_player_index
-            //    SetParameter(MidiFilePlayer, 8, 0)
-            //end
-            SetWidgetValue(button_letter_array[chord_player_index], 0)
-            SetWidgetValue(button_letter_array[chord_player_index], 1)
+            chordButtonPressed(chord_player_index);
         end
     elsif IndexOf(cc_play, CC_number) != -1 then
         player_index = IndexOf(cc_play, CC_number)
@@ -1289,16 +1244,15 @@ on WidgetValueChanged (newValue : Double) from midi_file_playing
     if chord_player_triggered >= 0 and newValue == 0.0 then
         chord_player_index = chord_player_triggered
         chord_player_triggered = -1
-        SetWidgetValue(button_letter_array[chord_player_index], 0)
-        SetWidgetValue(button_letter_array[chord_player_index], 1)
         SetWidgetValue(button_D, 0)
+        chordButtonPressed(chord_player_index)
     end
 end
 
 on WidgetValueChanged (newValue: double) from foot_pedal
     if GetWidgetValue(foot_pedal_switch) == 1 then
         if GetWidgetValue(use_pedal_as_volume) == 1 then
-            setOutputVolumes(newValue)
+            setMidiVolume(newValue)
         else
             setInstrumentFromPedal(newValue)
         end
@@ -1335,10 +1289,6 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 14,15,20,22 From Urre
     end
 end
 
-on ControlChangeEvent (cc : ControlChangeMessage) Matching 24 From UrrejolaPedalboard
-    switchDelayedWidgetOn(guitar_preset_button)
-end
-
 on ControlChangeEvent (cc : ControlChangeMessage) Matching 23,25 From UrrejolaPedalboard
     var CC_number : Integer
     var audio_track : Integer
@@ -1354,6 +1304,9 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 23,25 From UrrejolaPe
         if GetWidgetValue(midi_channel) > 0 then
             // MIDI
             switchButton(midi_button)
+            if GetWidgetValue(midi_alt_bass) == 1 then
+                SetWidgetValue(bass_button, 1 - GetWidgetValue(midi_button))
+            end
         end
     end
 end
@@ -1372,7 +1325,7 @@ on ControlChangeEvent (cc : ControlChangeMessage) Matching 30,88,91 From Urrejol
     end
 end
 
-on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset_1, guitar_amp_preset_2, beat_a_1, beat_a_2, midi_channel
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset, beat_a_1, beat_a_2, midi_channel
     var rounded_value : Double
     var new_value: Double
     var steps: integer = knob_widget_range_array[index]
@@ -1420,8 +1373,7 @@ on BeatChanged(bar : integer, beat : integer)
                 
                 beat_change_at = Round(GetWidgetValue(beat_a_array[x]) * 100) - 1 // -1 porque empieza en 0
                 if beat_change_at >= 0 and beat_change_at == current_beat then
-                    SetWidgetValue(button_letter_array[0], 0)
-                    SetWidgetValue(button_letter_array[0], 1)
+                    chordButtonPressed(0)
                 end
             end
         end
