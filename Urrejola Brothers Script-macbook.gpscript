@@ -22,20 +22,9 @@ var button_play_array: widget array = [button_play_1, button_play_2]
 
 var button_filter_4, button_filter_9, button_filter_10, button_filter_13, button_filter_14, button_filter_15, button_filter_16: widget
 var button_filter_array: widget array = [button_filter_13, button_filter_14, button_filter_15, button_filter_16]
-var tuner_button, bass_button, octave_button, guitar_button, octave_amount: widget
+var tuner_button, bass_button, octave_button, guitar_button, octave_amount, metronome_button: widget
 
-var bass_cc: Integer = 14
-var octave_cc: Integer = 15
-var guitar_cc: Integer = 20
-var tuner_cc: Integer = 22
-var cc_chord : Integer array = [26,27,28,29]
-var cc_reset : Integer array = [31]
-var cc_stop : Integer array = [87]
-var cc_play : Integer array = [85,86]
-var cc_page_next : Integer = 30
-var cc_page_prev : Integer = 88
-var cc_next_song : Integer = 91
-var cc_set_song : Integer = 90
+var next_page_button, previous_page_button, next_song_button: widget
 
 var GuitarGain, GuitarPitch, /*GuitarAmp,*/ GuitarDelay, GuitarReverb, GuitarMidi, GuitarWah, MIDIGuitarChannel: PluginBlock
 var guitar_plugins_to_bypass: PluginBlock array = [GuitarPitch]
@@ -76,7 +65,7 @@ var chord_name_array: widget array = [chord_name_1, chord_name_2, chord_name_3, 
 var next_chord_name_1, next_chord_name_2, next_chord_name_3, next_chord_name_4: widget
 var next_chord_name_array: widget array = [next_chord_name_1, next_chord_name_2, next_chord_name_3, next_chord_name_4]
 
-var special_button_1, midi_button: widget
+var midi_button: widget
 var midi_channel, midi_volume, midi_alt_bass: widget
 
 var midi_mixer_volume: widget
@@ -142,6 +131,8 @@ var panel_chord_columns: integer = 8
 var letter_array: string array
 var pedal_margin_range: integer = 4
 var general_midi_volume: double;
+
+var press_track_button: boolean = true;
 
 function indexOfStringArray(text: string array, search: string) returns integer
     var x: integer
@@ -221,7 +212,9 @@ function loadMidiFile()
     song_name = getSongNameFromVariationName(variation_name)
     midi_file_name = directory + ReplaceString(song_name, " ", "_", false) + ".mid"
     if FileExists(midi_file_name) then
-        number_of_tracks = MidiSequence_LoadMidiFile(midi_sequence, midi_file_name)
+        MidiSequence_LoadStandardMidiFile(midi_sequence, midi_file_name)
+        MidiSequence_Quantize(midi_sequence, 1)
+        number_of_tracks = MidiSequence_GetTrackCount(midi_sequence)
     end
     setChordLetterValues(number_of_tracks)
 end
@@ -245,6 +238,7 @@ end
 
 function setTrackButtonOff(track_number: integer)
     if track_number >= 0 then
+        press_track_button = false
         SetWidgetValue(button_letter_array[track_number], 0)
         SetWidgetLabel(chord_name_array[track_number], "")
         SetWidgetLabel(next_chord_name_array[track_number], "")
@@ -897,13 +891,10 @@ function setMidiVolume(newValue: double)
     var index: integer
     var value: double
     
-    Print(newValue)
-    Print(general_midi_volume)
     value = 0
     if newValue > 0 then
         value = newValue * general_midi_volume
     end
-    Print(value)
     SetWidgetValue(midi_mixer_volume, value)
 end
 
@@ -931,12 +922,13 @@ function sendSongAndPart()
 end
 
 function chordButtonPressed(track_index: int)
-    SetWidgetValue(button_letter_array[track_index], 1)
+    //SetWidgetValue(button_letter_array[track_index], 1)
     if GetWidgetValue(foot_pedal) > 0 and track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
         general_midi_volume = 0.707
     //SetWidgetCurveValue(midi_mixer_volume, 1.0, 0.2)
         SetWidgetValue(foot_pedal, 0)
     else
+
         if track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
             switchButtonOn(auto_move)
             switchButtonOff(auto_fade_in)
@@ -1082,6 +1074,7 @@ end
 
 on WidgetValueChanged (newValue : Double) from reset_button
     if newValue == 1 then
+        switchDelayedWidgetOn(reset_button)
         if GetWidgetValue(audio_fade_out) == 1 then
             SetWidgetValue(start_fade_out, 1)
         else
@@ -1091,22 +1084,16 @@ on WidgetValueChanged (newValue : Double) from reset_button
 end
 
 on WidgetValueChanged (newValue : Double) from audio_volume_auto
-    if newValue < 0.1 then
+    if newValue < 0.2 then
         reset()
     end
 end
 
 on WidgetValueChanged (newValue : Double) from stop_button
     if newValue == 1 then
-        // stop
+        switchDelayedWidgetOn(stop_button)
         resetPlayers()
         EnablePlayhead(false)
-        // reset
-        //sendChordOffToMidiDevice(last_chord)
-        //setTrackButtonsOff()
-        //resetPanelChords()
-        //last_chord = []
-        //stopMidiPlayer()
     end
 end
 
@@ -1122,7 +1109,7 @@ end
 on WidgetValueChanged (newValue : Double) from bass_button
     if newValue == 0 then
         if GetWidgetValue(octave_button) == 1 then
-            setOctaveOff()
+            //setOctaveOff()
         end
     end
 end
@@ -1156,22 +1143,35 @@ on WidgetValueChanged (newValue : Double) from guitar_button
     end
 end
 
-/*on WidgetValueChanged (newValue : Double) from special_button_1
-    if newValue == 1 then
-        //OpenPlugin(GuitarMidi)
-        //SetPluginEditorXYPosition(GuitarMidi, 0, 200)
-    else
-        //ClosePlugin(GuitarMidi)
-    end
-end*/
-
 on WidgetValueChanged (newValue : Double) from midi_button
-    setMidiInstrument(newValue)
+    if GetWidgetValue(midi_channel) > 0 then
+        // MIDI
+        setMidiInstrument(newValue)
+        if GetWidgetValue(midi_alt_bass) == 1 then
+            SetWidgetValue(bass_button, 1 - GetWidgetValue(midi_button))
+        end
+    end
+end
+
+on WidgetValueChanged (newValue : Double) from metronome_button
+    if newValue == 1 then
+        EnableMetronome(true)
+        EnablePlayhead(true)
+    else
+        EnableMetronome(false)
+        EnablePlayhead(false)
+    end
 end
 
 on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from button_A, button_B, button_C, button_D
     if newValue == 1 then
-        //chordButtonPressed(track_index)
+        chordButtonPressed(track_index)
+    else
+        if press_track_button then
+            SetWidgetValue(button_letter_array[track_index], 1)
+        else
+            press_track_button = true
+        end
     end
 end
 
@@ -1207,43 +1207,13 @@ on ProgramChangeEvent(pc : ProgramChangeMessage) From UrrejolaPedalboard
     end
 end
 
-on ControlChangeEvent (cc : ControlChangeMessage) Matching 26,27,28,29,31,85,86,87 From UrrejolaPedalboard
-    var CC_number : Integer
-    var player_index, chord_player_index: integer
-
-    CC_number = GetCCNumber(cc)
-    if IndexOf(cc_reset, CC_number) != -1 then
-        switchDelayedWidgetOn(reset_button)
-    elsif IndexOf(cc_stop, CC_number) != -1 then
-        switchDelayedWidgetOn(stop_button)
-    elsif IndexOf(cc_chord, CC_number) != -1 then
-        chord_player_index = IndexOf(cc_chord, CC_number)
-        if chord_player_index == 3 and GetWidgetValue(midi_player_track) > 0 then
-            // midi file
-            if GetWidgetValue(button_letter_array[3]) == 1 then
-                // parar loop
-                SetParameter(MidiFilePlayer, 8, 0)
-                SetWidgetValue(button_D, 0)
-            else
-                // start
-                chordButtonPressed(chord_player_index)
-            end
-        else
-            // boton A,B,C,(D)
-            chordButtonPressed(chord_player_index);
-        end
-    elsif IndexOf(cc_play, CC_number) != -1 then
-        player_index = IndexOf(cc_play, CC_number)
-        SetWidgetValue(button_play_array[player_index], 1)
-    end
-end
-
 on WidgetValueChanged (newValue : Double) from midi_file_playing
     var chord_player_index: integer
 
     if chord_player_triggered >= 0 and newValue == 0.0 then
         chord_player_index = chord_player_triggered
         chord_player_triggered = -1
+        press_track_button = false
         SetWidgetValue(button_D, 0)
         chordButtonPressed(chord_player_index)
     end
@@ -1271,58 +1241,16 @@ on WidgetValueChanged (newValue: double) from send_setlist
     end
 end
 
-/*on ControlChangeEvent (cc : ControlChangeMessage) Matching 1 From UrrejolaPedalboard
-    setInstrumentFromPedal(GetCCValue(cc))
-end*/
-
-on ControlChangeEvent (cc : ControlChangeMessage) Matching 14,15,20,22 From UrrejolaPedalboard
-    var CC_number : Integer = GetCCNumber(cc)
-
-    if CC_number == bass_cc then
-        switchButton(bass_button)
-    elsif CC_number == octave_cc then
-        switchButton(octave_button)
-    elsif CC_number == guitar_cc then
-        switchButton(guitar_button)
-    elsif CC_number == tuner_cc then
-        switchButton(tuner_button)
-    end
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from next_page_button
+    SongNextPart()
 end
 
-on ControlChangeEvent (cc : ControlChangeMessage) Matching 23,25 From UrrejolaPedalboard
-    var CC_number : Integer
-    var audio_track : Integer
-    var player_index: integer
-
-    CC_number = GetCCNumber(cc)
-
-    if CC_number == 23 then
-        switchButton(special_button_1)
-    end
-
-    if CC_number == 25 then
-        if GetWidgetValue(midi_channel) > 0 then
-            // MIDI
-            switchButton(midi_button)
-            if GetWidgetValue(midi_alt_bass) == 1 then
-                SetWidgetValue(bass_button, 1 - GetWidgetValue(midi_button))
-            end
-        end
-    end
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from previous_page_button
+    SongPrevPart()
 end
 
-on ControlChangeEvent (cc : ControlChangeMessage) Matching 30,88,91 From UrrejolaPedalboard
-    var cc_number : integer = GetCCNumber(cc)
-
-    if cc_number == cc_page_next then
-        SongNextPart()
-    end
-    if cc_number == cc_page_prev then
-        SongPrevPart()
-    end
-    if cc_number == cc_next_song then
-        NextSong()
-    end
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from next_song_button
+    NextSong()
 end
 
 on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset, beat_a_1, beat_a_2, midi_channel
