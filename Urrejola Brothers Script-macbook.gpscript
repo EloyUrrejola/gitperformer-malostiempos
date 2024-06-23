@@ -1091,7 +1091,7 @@ end
 
 on WidgetValueChanged (newValue : Double) from audio_volume_auto
     if newValue < 0.2 then
-        //reset()
+        reset()
     end
 end
 
