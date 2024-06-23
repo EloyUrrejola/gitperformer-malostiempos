@@ -130,7 +130,7 @@ var panel_chord_columns: integer = 8
 
 var letter_array: string array
 var pedal_margin_range: integer = 4
-var general_midi_volume: double;
+var general_midi_volume: double = 0.707;
 
 var press_track_button: boolean = true;
 
@@ -238,8 +238,10 @@ end
 
 function setTrackButtonOff(track_number: integer)
     if track_number >= 0 then
-        press_track_button = false
-        SetWidgetValue(button_letter_array[track_number], 0)
+        if GetWidgetValue(button_letter_array[track_number]) == 1 then
+            press_track_button = false
+            SetWidgetValue(button_letter_array[track_number], 0)
+        end
         SetWidgetLabel(chord_name_array[track_number], "")
         SetWidgetLabel(next_chord_name_array[track_number], "")
     end
@@ -453,6 +455,7 @@ function getChordName(chord: MidiMessage array) returns string
 end
 // ==============================================
 
+// =============== SysEx messages ===============
 function replaceTildes(message: string) returns string
     message = ReplaceString(message, "á", "&a", true)
     message = ReplaceString(message, "é", "&e", true)
@@ -491,6 +494,8 @@ function sendChordToMidiDevice(chord: MidiMessage Array)
         sendSysexMessage("chord:" + chord_names[current_chord_number - 1])
     end
 end
+// ==============================================
+
 
 function drawPanelChords()
     var x, y: integer
@@ -925,10 +930,11 @@ function chordButtonPressed(track_index: int)
     //SetWidgetValue(button_letter_array[track_index], 1)
     if GetWidgetValue(foot_pedal) > 0 and track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
         general_midi_volume = 0.707
-    //SetWidgetCurveValue(midi_mixer_volume, 1.0, 0.2)
+        //SetWidgetCurveValue(midi_mixer_volume, 1.0, 0.2)
         SetWidgetValue(foot_pedal, 0)
+        SetWidgetLabel(chord_name_array[track_index], "prepared")
+        SetWidgetLabel(next_chord_name_array[track_index], "fade in")
     else
-
         if track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
             switchButtonOn(auto_move)
             switchButtonOff(auto_fade_in)
@@ -1085,7 +1091,7 @@ end
 
 on WidgetValueChanged (newValue : Double) from audio_volume_auto
     if newValue < 0.2 then
-        reset()
+        //reset()
     end
 end
 
@@ -1213,8 +1219,10 @@ on WidgetValueChanged (newValue : Double) from midi_file_playing
     if chord_player_triggered >= 0 and newValue == 0.0 then
         chord_player_index = chord_player_triggered
         chord_player_triggered = -1
-        press_track_button = false
-        SetWidgetValue(button_D, 0)
+        if GetWidgetValue(button_D) == 1 then
+            press_track_button = false
+            SetWidgetValue(button_D, 0)
+        end
         chordButtonPressed(chord_player_index)
     end
 end
@@ -1301,7 +1309,7 @@ on BeatChanged(bar : integer, beat : integer)
                 
                 beat_change_at = Round(GetWidgetValue(beat_a_array[x]) * 100) - 1 // -1 porque empieza en 0
                 if beat_change_at >= 0 and beat_change_at == current_beat then
-                    chordButtonPressed(0)
+                    SetWidgetValue(button_letter_array[0], 1)
                 end
             end
         end
