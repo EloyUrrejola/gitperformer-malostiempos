@@ -51,7 +51,7 @@ var player_length_1, player_length_2, player_length_led_1, player_length_led_2: 
 var player_length_array: widget array = [player_length_1, player_length_2]
 var reset_button, stop_button: widget
 var send_setlist: widget
-var reset_chords: widget
+var reset_chords, auto_play_1, auto_play_2: widget
 
 var guitar_delay_button, guitar_amp_button, guitar_reverb_button, guitar_delay_time, guitar_delay_feedback: widget
 var guitar_delay_mix, guitar_amp_preset, guitar_reverb_amount, guitar_reverb_length, guitar_midi_button: widget
@@ -1021,9 +1021,16 @@ function startAllProcesses(new_var: int)
         switchButtonOn(reset_button)
     end
 
-    if current_variation == "Terrenal-1" then
+    if GetWidgetValue(auto_play_1) == 1 then
         switchButtonOn(button_play_1)
     end
+
+    if GetWidgetValue(auto_play_2) == 1 then
+        switchButtonOn(button_play_2)
+    end
+
+    // -------------------------
+
     if current_variation == "Terrenal-2" then
         // stop midi file & press guitar button to unselect it
         switchGuitarOff()
@@ -1031,14 +1038,6 @@ function startAllProcesses(new_var: int)
     if current_variation == "Etiopía-1" then
         // stop audio
         switchButtonOn(stop_button)
-    end
-    if current_variation == "Etiopía-6" then
-        // Final Etiopía audio
-        switchButtonOn(button_play_2)
-    end
-    if current_variation == "Electroshock-5" then
-        // Final Electroshck audio
-        switchButtonOn(button_play_2)
     end
 end
 
