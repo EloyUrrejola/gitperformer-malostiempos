@@ -250,7 +250,6 @@ end
 
 function setTrackButtonsOff()
     var x: integer
-    
     for x=0; x<4; x=x+1 do
         setTrackButtonOff(x)
     end
@@ -927,17 +926,17 @@ function sendSongAndPart()
 end
 
 function chordButtonPressed(track_index: int)
-    //SetWidgetValue(button_letter_array[track_index], 1)
-    if GetWidgetValue(foot_pedal) > 0 and track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
+    if GetWidgetValue(foot_pedal) > 0 and track_index == 0 and current_chord_number == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
+        // prepara fade in
         general_midi_volume = 0.707
-        //SetWidgetCurveValue(midi_mixer_volume, 1.0, 0.2)
         SetWidgetValue(foot_pedal, 0)
-        SetWidgetLabel(chord_name_array[track_index], "prepared")
-        SetWidgetLabel(next_chord_name_array[track_index], "fade in")
+        SetWidgetLabel(chord_name_array[track_index], "fade in")
+        SetWidgetLabel(next_chord_name_array[track_index], "ready")
     else
-        if track_index == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
+        if track_index == 0 and current_chord_number == 0 and GetWidgetValue(auto_fade_in) == 1 and GetWidgetValue(auto_move) == 0 then
+            // lanza fade in
             switchButtonOn(auto_move)
-            switchButtonOff(auto_fade_in)
+            //switchButtonOff(auto_fade_in)
         end
         if track_index == 3 and GetWidgetValue(midi_player_track) > 0 then
             startMidiPlayer()
@@ -1078,8 +1077,15 @@ on WidgetValueChanged (newValue : Double) from reset_button
 end
 
 on WidgetValueChanged (newValue : Double) from audio_volume_auto
-    if newValue < 0.1 then
+    if GetWidgetValue(auto_fade_in) == 0 and newValue < 0.1 then
+        // solo en fade out, no en fade in
         reset()
+    end
+end
+
+on WidgetValueChanged (newValue: double) from auto_move
+    if newValue == 0 then
+        switchButtonOff(auto_fade_in)
     end
 end
 
