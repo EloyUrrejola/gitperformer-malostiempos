@@ -1,11 +1,9 @@
 var directory : String = "/Volumes/Macintosh HD/Users/eloy/Documents/MidiFiles/"
 var UrrejolaPedalboard, MidiGuitarBlock : MidiInBlock
 var TeensyMidiOut : MidiOutBlock
-var SongPlayer, SongPlayer2, SongPlayer3, SongPlayer4, SongPlayer5, SongPlayer6, SongPlayer7, SongPlayer8, SongPlayer9, SongPlayer10, SongPlayer11, SongPlayer12: PluginBlock
-var song_player_array: PluginBlock array = [SongPlayer, SongPlayer2, SongPlayer3, SongPlayer4, SongPlayer5, SongPlayer6, SongPlayer7, SongPlayer8, SongPlayer9, SongPlayer10, SongPlayer11, SongPlayer12]
 var MidiFilePlayer: PluginBlock
 var OmnisphereInstrument: PluginBlock
-var BassGuitarMixer, AudioPlayerMixer, MTuner: PluginBlock
+var BassGuitarMixer, /*AudioPlayerMixer,*/ MTuner: PluginBlock
 var cycle_1, cycle_2, cycle_3, cycle_4: widget
 var cycle_array: widget array = [cycle_1, cycle_2, cycle_3, cycle_4]
 var chord_root_1, chord_root_2, chord_root_3, chord_root_4: widget
@@ -43,12 +41,6 @@ var player_1_led, player_2_led: widget
 var beat_a_1, beat_A_led_1, beat_a_2, beat_A_led_2: widget
 var beat_a_array: widget array = [beat_a_1, beat_a_2]
 var beat_a_lead_array: widget array = [beat_A_led_1, beat_A_led_2]
-var player_1_fader, player_2_fader: widget
-var player_fader_array: widget array = [player_1_fader, player_2_fader]
-var player_time_1, player_time_2: widget
-var player_time_array: widget array = [player_time_1, player_time_2]
-var player_length_1, player_length_2, player_length_led_1, player_length_led_2: widget
-var player_length_array: widget array = [player_length_1, player_length_2]
 var reset_button, stop_button: widget
 var send_setlist: widget
 
@@ -76,14 +68,14 @@ var audio_fade_out, start_fade_out, audio_volume_auto: widget
 
 var audio_track_length: integer = 20
 var midi_track_length: integer = 20
-var knob_widget_array: widget array = [play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset, beat_a_1, beat_a_2, midi_channel]
-var knob_widget_label_array: string array = ["tr", "tr", "tr", "s", "s", "preset", "s", "s", "ch"]
-var knob_widget_led_array: widget array = [player_1_led, player_2_led, button_filter_16, player_length_led_1, player_length_led_2, guitar_amp_button, beat_A_led_1, beat_A_led_2, button_filter_4]
-var knob_widget_range_array: integer array = [audio_track_length, audio_track_length, midi_track_length, 100, 100, 10, 100, 100, 10]
-var knob_widget_led_on_array: double array = [0.6, 0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
-var knob_widget_led_off_array: double array = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-var knob_widget_label_before: boolean array = [true, true, true, false, false, true, false, false, true]
-var knob_widget_start_by_zero_array: boolean array = [false, false, false, false, false, false, true, true, false]
+var knob_widget_array: widget array = [play_1_track, play_2_track, midi_player_track, guitar_amp_preset, beat_a_1, beat_a_2, midi_channel]
+var knob_widget_label_array: string array = ["tr", "tr", "tr", "preset", "s", "s", "ch"]
+var knob_widget_led_array: widget array = [player_1_led, player_2_led, button_filter_16, guitar_amp_button, beat_A_led_1, beat_A_led_2, button_filter_4]
+var knob_widget_range_array: integer array = [audio_track_length, audio_track_length, midi_track_length, 10, 100, 100, 10]
+var knob_widget_led_on_array: double array = [0.6, 0.6, 0.6, 0.0, 0.0, 0.0, 0.6]
+var knob_widget_led_off_array: double array = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0]
+var knob_widget_label_before: boolean array = [true, true, true, true, false, false, true]
+var knob_widget_start_by_zero_array: boolean array = [false, false, false, false, true, true, false]
 
 var modern_chord_names: string array = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 var number_of_tracks : Integer
@@ -294,17 +286,13 @@ function resetPlayers()
 
     EnablePlayhead(false)
     for x=0; x<12; x=x+1 do
-        SetParameter(song_player_array[x], 0, 0)
-        SetParameter(song_player_array[x], 4, 0)
+        //SetParameter(song_player_array[x], 0, 0)
+        //SetParameter(song_player_array[x], 4, 0)
     end
     for x=0; x<2; x=x+1 do
         SetWidgetValue(button_play_array[x], 0)
-        //if GetWidgetValue(play_track_array[x]) > 0 then
-            SetWidgetLabel(player_time_array[x], intToTimestamp(0))
-        /*else
-            SetWidgetLabel(player_time_array[x], "")
-        end*/
-        SetWidgetValue(player_fader_array[x], 0)
+        //SetWidgetLabel(player_time_array[x], intToTimestamp(0))
+        //SetWidgetValue(player_fader_array[x], 0)
     end
 end
 
@@ -640,9 +628,9 @@ end
 function playAudioTrack(player_index: Integer, audio_track: Integer)
     var volume: Double = GetWidgetValue(play_volume_array[player_index])
 
-    SetParameter(AudioPlayerMixer, (audio_track - 1) * 7, volume)
-    SetParameter(song_player_array[audio_track - 1], 9, 1)
-    SetParameter(song_player_array[audio_track - 1], 1, 1)
+    //SetParameter(AudioPlayerMixer, (audio_track - 1) * 7, volume)
+    //SetParameter(song_player_array[audio_track - 1], 9, 1)
+    //SetParameter(song_player_array[audio_track - 1], 1, 1)
 end
 
 // ==================================
@@ -981,9 +969,7 @@ function startAllProcesses(new_var: int)
     bass_reverb_saved = false
     chord_player_triggered = -1
 
-    //resetPlayers()
     resetPanelChords()
-    //setTrackButtonsOff()
     
     // bypass audio players we don't need
     tracks = []
@@ -995,7 +981,7 @@ function startAllProcesses(new_var: int)
         if IndexOf(tracks, x + 1) != -1 then
             bypassed = false
         end
-        SetPluginBypassed(song_player_array[x], bypassed)
+        //SetPluginBypassed(song_player_array[x], bypassed)
     end
     // fin bypass
     
@@ -1238,7 +1224,7 @@ on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from next_so
     NextSong()
 end
 
-on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, midi_player_track, player_length_1, player_length_2, guitar_amp_preset, beat_a_1, beat_a_2, midi_channel
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from play_1_track, play_2_track, midi_player_track, guitar_amp_preset, beat_a_1, beat_a_2, midi_channel
     var rounded_value : Double
     var new_value: Double
     var steps: integer = knob_widget_range_array[index]
@@ -1268,7 +1254,7 @@ on WidgetValueChanged (newValue: double) from out_mode
     end
 end
 
-on BeatChanged(bar : integer, beat : integer)
+/*on BeatChanged(bar : integer, beat : integer)
     var beat_change_at : integer
     var current_beat : integer = (bar * 4 - 4) + beat - 1
     var playing : integer
@@ -1291,7 +1277,7 @@ on BeatChanged(bar : integer, beat : integer)
             end
         end
     end
-end
+end*/
 
 on TimerTick(ms : double)
     var x: integer
