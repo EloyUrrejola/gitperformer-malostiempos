@@ -30,7 +30,7 @@ var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amoun
 var select_bass, bass_name: widget
 var bass_name_array: string array = ["Warwick", "Status"]
 
-var midi_player_track, midi_player_volume, midi_file_player_label, midi_file_playing, midi_file_stop_chords, midi_file_stop_chords_label: widget
+var midi_file, midi_player_track, midi_player_volume, midi_file_player_label, midi_file_playing, midi_file_stop_chords, midi_file_stop_chords_label: widget
 var reset_button, stop_button: widget
 var send_setlist: widget
 
@@ -51,7 +51,7 @@ var button_A_group: widget array = [chord_name_1, next_chord_name_1, chord_root_
 var button_B_group: widget array = [chord_name_2, next_chord_name_2, chord_root_2, cycle_2]
 var button_C_group: widget array = [chord_name_3, next_chord_name_3, chord_root_3, cycle_3]
 var button_D_group: widget array = [chord_name_4, next_chord_name_4, chord_root_4, cycle_4, root_4_label, cycle_4_label]
-var midi_file_player_group: widget array = [midi_player_volume, midi_file_player_label, midi_file_stop_chords, midi_file_stop_chords_label]
+var midi_file_player_group: widget array = [midi_player_track, midi_player_volume, midi_file_player_label, midi_file_stop_chords, midi_file_stop_chords_label]
 
 var midi_button: widget
 var midi_channel, midi_volume, midi_alt_bass: widget
@@ -62,12 +62,11 @@ var out_mode, out_midi_L, out_midi_R, out_bass_L, out_bass_R: widget
 
 var audio_fade_out, start_fade_out, audio_volume_auto: widget
 
-var midi_track_length: integer = 20
-var knob_widget_array: widget array = [midi_player_track, guitar_amp_preset, midi_channel]
-var knob_widget_label_array: string array = ["tr", "preset", "ch"]
-var knob_widget_range_array: integer array = [midi_track_length, 10, 10]
-var knob_widget_label_before: boolean array = [true, true, true]
-var knob_widget_start_by_zero_array: boolean array = [false, false, false]
+var knob_widget_array: widget array = [guitar_amp_preset, midi_channel]
+var knob_widget_label_array: string array = ["preset", "ch"]
+var knob_widget_range_array: integer array = [10, 10]
+var knob_widget_label_before: boolean array = [true, true]
+var knob_widget_start_by_zero_array: boolean array = [false, false]
 
 var modern_chord_names: string array = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 var number_of_tracks : Integer
@@ -171,7 +170,7 @@ function showOrHideWidgetGroup(widget_group: widget array, hide: boolean)
 end
 
 function showOrHideMidiFilePlayer()
-    if GetWidgetValue(midi_player_track) > 0 then
+    if GetWidgetValue(midi_file) == 1 then
         showOrHideWidgetGroup(midi_file_player_group, false)
     else
         showOrHideWidgetGroup(midi_file_player_group, true)
@@ -778,10 +777,6 @@ function setKnobLabel(w: Widget, label_text:String, value: Integer, label_before
     SetWidgetLabel(w, label)
 end
 
-function setMidiFileTrack()
-    SetParameter(MidiFilePlayer, 0, ((GetWidgetValue(midi_player_track) - (1.0 / midi_track_length)) / 128) * midi_track_length)
-end
-
 function startMidiPlayer()
     if GetWidgetValue(midi_file_stop_chords) == 1 then
         setTrackButtonOff(last_track_number)
@@ -877,9 +872,9 @@ function chordButtonPressed(track_index: int)
             switchButtonOn(auto_move)
             //switchButtonOff(auto_fade_in)
         end
-        if track_index == 3 and GetWidgetValue(midi_player_track) > 0 then
+        if track_index == 3 and GetWidgetValue(midi_file) == 1 then
             startMidiPlayer()
-        elsif GetWidgetValue(midi_player_track) > 0 and GetWidgetValue(button_letter_array[3]) == 1 then
+        elsif GetWidgetValue(midi_file) == 1 and GetWidgetValue(button_letter_array[3]) == 1 then
             chord_player_triggered = track_index
             SetParameter(MidiFilePlayer, 8, 0)
         elsif chord_player_triggered < 0 then
@@ -948,7 +943,6 @@ function startAllProcesses(new_var: int)
     for x=0; x<Size(knob_widget_array); x=x+1 do
         setKnobLabel(knob_widget_array[x], knob_widget_label_array[x], Round(GetWidgetValue(knob_widget_array[x]) * knob_widget_range_array[x]), knob_widget_label_before[x], knob_widget_start_by_zero_array[x])
     end
-    setMidiFileTrack()
     showOrHideMidiFilePlayer()
 end
 
@@ -1085,6 +1079,10 @@ on WidgetValueChanged (w: Widget, track_index: Integer, newValue: Double) from b
     end
 end
 
+on WidgetValueChanged (newValue: double) from midi_file
+    showOrHideMidiFilePlayer()
+end
+
 on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from block_bass_reverb, auto_bass_reverb
     if newValue == 1 then
         if index == 0 then
@@ -1165,7 +1163,7 @@ on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from next_so
     NextSong()
 end
 
-on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from midi_player_track, guitar_amp_preset, midi_channel
+on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from guitar_amp_preset, midi_channel
     var rounded_value : Double
     var new_value: Double
     var steps: integer = knob_widget_range_array[index]
@@ -1175,10 +1173,6 @@ on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from midi_pl
     if new_value != rounded_value then
         SetWidgetValue(w, IntToFloat(Round(new_value * steps)) / steps)
         setKnobLabel(w, knob_widget_label_array[index], Round(newValue * steps), knob_widget_label_before[index], knob_widget_start_by_zero_array[index]) 
-        if index == 0 then
-            setMidiFileTrack()
-            showOrHideMidiFilePlayer()
-        end
     end
 end
 
