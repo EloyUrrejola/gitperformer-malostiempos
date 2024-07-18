@@ -19,7 +19,7 @@ var button_letter_array: widget array = [button_A, button_B, button_C, button_D]
 
 var tuner_button, bass_button, octave_button, guitar_button, octave_amount, metronome_button: widget
 
-var next_page_button, previous_page_button, next_song_button: widget
+var next_page_button, previous_page_button, next_song_button, next_page_led, previous_page_led: widget
 
 var GuitarGain, GuitarPitch, /*GuitarAmp,*/ GuitarDelay, GuitarReverb, GuitarMidi, GuitarWah, MIDIGuitarChannel: PluginBlock
 var guitar_plugins_to_bypass: PluginBlock array = [GuitarPitch]
@@ -1152,15 +1152,15 @@ on WidgetValueChanged (newValue: double) from send_setlist
 end
 
 on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from next_page_button
-    SongNextPart()
+    switchDelayedWidgetOn(next_page_led);
 end
 
 on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from previous_page_button
-    SongPrevPart()
+    switchDelayedWidgetOn(previous_page_led);
 end
 
 on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from next_song_button
-    NextSong()
+    switchDelayedWidgetOn(next_page_led);
 end
 
 on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from guitar_amp_preset, midi_channel
