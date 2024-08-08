@@ -240,7 +240,9 @@ function loadMidiFile()
     song_name = getSongNameFromVariationName(variation_name)
     midi_file_name = directory + ReplaceString(song_name, " ", "_", false) + ".mid"
     if FileExists(midi_file_name) then
-        number_of_tracks = MidiSequence_LoadMidiFile(midi_sequence, midi_file_name)
+        MidiSequence_LoadStandardMidiFile(midi_sequence, midi_file_name) 
+        MidiSequence_Quantize(midi_sequence, 1) 
+        number_of_tracks = MidiSequence_GetTrackCount(midi_sequence) 
     end
     setChordLetterValues(number_of_tracks)
 end
