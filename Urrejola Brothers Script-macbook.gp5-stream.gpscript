@@ -21,9 +21,9 @@ var tuner_button, bass_button, octave_button, guitar_button, octave_amount, metr
 
 var next_page_button, previous_page_button, next_song_button, next_page_led, previous_page_led: widget
 
-var GuitarGain, GuitarPitch, /*GuitarAmp,*/ GuitarDelay, GuitarReverb, GuitarMidi, GuitarWah, MIDIGuitarChannel: PluginBlock
+var GuitarGain, GuitarPitch, /*GuitarAmp,*/ GuitarDelay, GuitarReverb, GuitarMidi, /*GuitarWah,*/ MIDIGuitarChannel: PluginBlock
 var guitar_plugins_to_bypass: PluginBlock array = [GuitarPitch]
-var midi_instrument_velocity, guitar_midi_effect: widget
+/*var midi_instrument_velocity, guitar_midi_effect: widget*/
 
 var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amount, octave_reverb_length: widget
 
@@ -36,7 +36,7 @@ var send_setlist: widget
 
 var guitar_delay_button, guitar_amp_button, guitar_reverb_button, guitar_delay_time, guitar_delay_feedback: widget
 var guitar_delay_mix, guitar_amp_preset, guitar_reverb_amount, guitar_reverb_length, guitar_midi_button: widget
-var guitar_volume, guitar_background, guitar_wah_button, guitar_wah_depth: widget
+var guitar_volume, guitar_background/*, guitar_wah_button, guitar_wah_depth*/: widget
 var guitar_with_midi: widget
 
 var foot_pedal, foot_pedal_switch, foot_pedal_filter: widget
@@ -59,6 +59,9 @@ var midi_channel, midi_volume, midi_alt_bass: widget
 var midi_mixer_volume: widget
 
 var out_mode, out_midi_L, out_midi_R, out_bass_L, out_bass_R: widget
+
+var knob_audio_track, knob_audio_volume, slider_audio_position, button_audio_switch: widget
+var audio_array: widget array = [knob_audio_track, knob_audio_volume, slider_audio_position]
 
 var audio_fade_out, start_fade_out, audio_volume_auto: widget
 
@@ -691,12 +694,12 @@ function setGuitarPreset()
         switchButtonOff(midi_button)
     end
     
-    if GetWidgetValue(guitar_wah_button) == 1 then
+    /*if GetWidgetValue(guitar_wah_button) == 1 then
         SetPluginBypassed(GuitarWah, false)
         SetParameter(GuitarWah, 6, GetWidgetValue(guitar_wah_depth))
     else
         SetPluginBypassed(GuitarWah, true)
-    end
+    end*/
 end
 
 function switchGuitarPluginsOff()
@@ -849,14 +852,21 @@ function sendSetlist()
     sendSysexMessage("list:" + GetCurrentSetlistName() + "%" + song_list)
 end
 
-function sendSongAndPart()
-    var song_and_part: string
+function sendSongAndParts()
+    var song_and_parts: string
+    var x: integer
 
-    song_and_part = "" + GetCurrentSongIndex()
-    if GetSongPartCount() > 1 then
-        song_and_part = song_and_part + "-" + IntToString(GetCurrentSongPart()+1) + " / " + GetCurrentSongPartName()
-    end
-    sendSysexMessage("song:" + song_and_part)
+    song_and_parts = "" + GetCurrentSongIndex()
+    //if GetSongPartCount() > 1 then
+        song_and_parts = song_and_parts + "-" + IntToString(GetCurrentSongPart()) + "%"
+        for x=0; x<GetSongPartCount(); x=x+1 do
+            if x > 0 then
+                song_and_parts = song_and_parts + "|"
+            end
+            song_and_parts = song_and_parts + GetSongPartName(x)
+        end
+    //end
+    sendSysexMessage("song:" + song_and_parts)
 end
 
 function chordButtonPressed(track_index: int)
@@ -907,7 +917,7 @@ function startAllProcesses(new_var: int)
         end
 
         new_variation = song_name + "-" + IntToString(GetCurrentSongPart())
-        sendSongAndPart()
+        sendSongAndParts()
     end
     last_variation = current_variation
     current_variation = new_variation
@@ -1057,6 +1067,10 @@ on WidgetValueChanged (newValue : Double) from midi_button
     end
 end
 
+on WidgetValueChanged (newValue: double) from button_audio_switch
+    showOrHideWidgetGroup(audio_array, newValue == 0)
+end
+
 on WidgetValueChanged (newValue : Double) from metronome_button
     if newValue == 1 then
         EnableMetronome(true)
@@ -1093,7 +1107,7 @@ on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from block_b
     end
 end
 
-on NoteOnEvent (m : NoteMessage) From MidiGuitarBlock
+/*on NoteOnEvent (m : NoteMessage) From MidiGuitarBlock
     var effect: double = GetWidgetValue(guitar_midi_effect)
     var velocity: double = GetVelocity(m)
     var volume: double
@@ -1103,7 +1117,7 @@ on NoteOnEvent (m : NoteMessage) From MidiGuitarBlock
     distance = velocity - initial_volume
     volume = (initial_volume + (distance * effect)) / 127
     SetWidgetValue(midi_instrument_velocity, volume)
-end
+end*/
 
 //on ControlChangeEvent (cc : ControlChangeMessage) Matching 90 From UrrejolaPedalboard
 on ProgramChangeEvent(pc : ProgramChangeMessage) From UrrejolaPedalboard
@@ -1146,7 +1160,8 @@ end
 on WidgetValueChanged (newValue: double) from send_setlist
     if newValue == 1 and InSetlistMode() then
         sendSetlist()
-        sendSongAndPart()
+        //sendSongAndPart()
+        sendSongAndParts()
         switchButtonOff(send_setlist);
     end
 end
