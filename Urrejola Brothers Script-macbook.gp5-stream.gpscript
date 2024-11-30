@@ -21,11 +21,11 @@ var tuner_button, bass_button, octave_button, guitar_button, octave_amount, metr
 
 var next_page_button, previous_page_button, next_song_button, next_page_led, previous_page_led: widget
 
-var GuitarGain, GuitarPitch, /*GuitarAmp,*/ GuitarDelay, GuitarReverb, GuitarMidi, /*GuitarWah,*/ MIDIGuitarChannel: PluginBlock
-var guitar_plugins_to_bypass: PluginBlock array = [GuitarPitch]
+var GuitarGain, Guitar, /*GuitarPitch,*/ /*GuitarAmp,*/ /*GuitarDelay,*/ /*GuitarReverb,*/ GuitarMidi, /*GuitarWah,*/ MIDIGuitarChannel: PluginBlock
+//var guitar_plugins_to_bypass: PluginBlock array = [GuitarPitch]
 /*var midi_instrument_velocity, guitar_midi_effect: widget*/
 
-var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_amount, octave_reverb_length: widget
+var bass_reverb_button, block_bass_reverb, auto_bass_reverb, octave_reverb_button, octave_reverb_amount, octave_reverb_length: widget
 
 var select_bass, bass_name: widget
 var bass_name_array: string array = ["Warwick", "Status"]
@@ -34,8 +34,8 @@ var midi_file, midi_player_track, midi_player_volume, midi_file_player_label, mi
 var reset_button, stop_button: widget
 var send_setlist: widget
 
-var guitar_delay_button, guitar_amp_button, guitar_reverb_button, guitar_delay_time, guitar_delay_feedback: widget
-var guitar_delay_mix, guitar_amp_preset, guitar_reverb_amount, guitar_reverb_length, guitar_midi_button: widget
+//var /*guitar_delay_button, *//*guitar_amp_button,*/ guitar_reverb_button, guitar_delay_time, guitar_delay_feedback: widget*/
+var /*guitar_delay_mix,*/ guitar_amp_preset, guitar_reverb_button, guitar_reverb_amount, guitar_reverb_length/*, guitar_midi_button*/: widget
 var guitar_volume, guitar_background/*, guitar_wah_button, guitar_wah_depth*/: widget
 var guitar_with_midi: widget
 
@@ -671,28 +671,30 @@ function setGuitarPreset()
         SetPluginBypassed(GuitarAmp, true)
     end*/
     
-    if GetWidgetValue(guitar_delay_button) == 1 then
+    /*if GetWidgetValue(guitar_delay_button) == 1 then
         SetPluginBypassed(GuitarDelay, false)
         SetParameter(GuitarDelay, 1, GetWidgetValue(guitar_delay_time))
         SetParameter(GuitarDelay, 6, GetWidgetValue(guitar_delay_feedback))
         SetParameter(GuitarDelay, 7, GetWidgetValue(guitar_delay_mix))
     else
          SetPluginBypassed(GuitarDelay, true)
-    end
+    end*/
     
+
+    SetParameter(Guitar, 146, GetWidgetValue(guitar_reverb_button))
     if GetWidgetValue(guitar_reverb_button) == 1 then
-        SetPluginBypassed(GuitarReverb, false)
-        SetParameter(GuitarReverb, 3, GetWidgetValue(guitar_reverb_amount))
-        SetParameter(GuitarReverb, 1, GetWidgetValue(guitar_reverb_length))
+        //SetPluginBypassed(GuitarReverb, false)
+        SetParameter(Guitar, 141, GetWidgetValue(guitar_reverb_amount))
+        SetParameter(Guitar, 143, GetWidgetValue(guitar_reverb_length))
     else
-        SetPluginBypassed(GuitarReverb, true)
+        //SetPluginBypassed(GuitarReverb, true)
     end
 
-    if GetWidgetValue(guitar_midi_button) == 1 then
+    /*if GetWidgetValue(guitar_midi_button) == 1 then
         switchButtonOn(midi_button)
     else
         switchButtonOff(midi_button)
-    end
+    end*/
     
     /*if GetWidgetValue(guitar_wah_button) == 1 then
         SetPluginBypassed(GuitarWah, false)
@@ -702,17 +704,17 @@ function setGuitarPreset()
     end*/
 end
 
-function switchGuitarPluginsOff()
+/*function switchGuitarPluginsOff()
     var x: integer
     
     for x=0; x<Size(guitar_plugins_to_bypass); x=x+1 do
         SetPluginBypassed(guitar_plugins_to_bypass[x], true)
     end
-end
+end*/
 
 function switchGuitarOff()
     SetParameter(GuitarGain, 1, 1)
-    switchGuitarPluginsOff()
+    //switchGuitarPluginsOff()
 end
 
 function switchOctaveOn()
@@ -726,16 +728,17 @@ function switchOctaveOn()
     SetParameter(GuitarGain, 1, 0)
     //SetPluginBypassed(GuitarAmp, true)
     
-    SetPluginBypassed(GuitarPitch, false)
+    //SetPluginBypassed(GuitarPitch, false)
     
-    SetParameter(GuitarReverb, 3, GetWidgetValue(octave_reverb_amount))
-    SetParameter(GuitarReverb, 1, GetWidgetValue(octave_reverb_length))
-    SetPluginBypassed(GuitarReverb, false)
+    SetParameter(Guitar, 146, GetWidgetValue(octave_reverb_button))
+    SetParameter(Guitar, 141, GetWidgetValue(octave_reverb_amount))
+    SetParameter(Guitar, 143, GetWidgetValue(octave_reverb_length))
+    //SetPluginBypassed(GuitarReverb, false)
 end
 
 function switchOctaveOff()
     SetParameter(GuitarGain, 1, 1)
-    switchGuitarPluginsOff()
+    //switchGuitarPluginsOff()
     if bass_reverb_saved then
         SetWidgetValue(bass_reverb_button, 1)
         bass_reverb_saved = false
@@ -744,7 +747,7 @@ end
 
 function switchGuitarOn()
     SetParameter(GuitarGain, 1, 0)
-    SetPluginBypassed(GuitarPitch, false)
+    //SetPluginBypassed(GuitarPitch, false)
     setGuitarPreset()
 end
 
