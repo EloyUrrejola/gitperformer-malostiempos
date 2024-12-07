@@ -1,4 +1,5 @@
 var directory : String = "/Volumes/Macintosh HD/Users/eloy/Documents/MidiFiles/"
+var initializing, in_setlist_view: boolean
 var UrrejolaPedalboard, MidiGuitarBlock : MidiInBlock
 var TeensyMidiOut : MidiOutBlock
 var AudioFilePlayer: PluginBlock
@@ -231,7 +232,7 @@ function setBassName()
     SetWidgetLabel(bass_name, bass_name_array[Round(GetWidgetValue(select_bass))])
 end
 
-Initialization
+/*Initialization
     var switch: boolean
     
     if InSetlistMode() then
@@ -242,7 +243,7 @@ Initialization
     SetTimeSignatureNumerator(4)
     SetTimeSignatureDenominator(4)
     //current_midi_page_value = 200
-end
+end*/
 
 function setTrackButtonOff(track_number: integer)
     if track_number >= 0 then
@@ -962,19 +963,28 @@ end
 // ================ EVENTS ================
 
 Initialization
-    var switch: boolean
-    
-    if InSetlistMode() then
-        switch = SwitchToSongByIndex(0,0)
-    else
-        SetVariation(0)
+    initializing = true;
+    if !InSetlistMode() then
+        in_setlist_view = false
+        SwitchToSetlistView()
     end
-    SetTimeSignatureNumerator(4)
-    SetTimeSignatureDenominator(4)
-    reset()
 end
 
 on Variation (old_var : Int, new_var : Int)
+    var switch: boolean
+
+    if !in_setlist_view then
+        in_setlist_view = true
+    end
+
+    if initializing then
+        initializing = false
+        switch = SwitchToSongByIndex(0,0)
+        SetTimeSignatureNumerator(4)
+        SetTimeSignatureDenominator(4)
+        reset()
+    end
+
     events_allowed = false
     variation_time = TimeSinceStartup()
     startAllProcesses(new_var)
