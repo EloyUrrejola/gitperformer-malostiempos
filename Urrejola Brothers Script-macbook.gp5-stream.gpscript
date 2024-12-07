@@ -5,7 +5,7 @@ var TeensyMidiOut : MidiOutBlock
 var AudioFilePlayer: PluginBlock
 var MidiFilePlayer: PluginBlock
 var OmnisphereInstrument: PluginBlock
-var BassGuitarMixer, /*AudioPlayerMixer,*/ MTuner: PluginBlock
+var /*BassGuitarMixer,*/ /*AudioPlayerMixer,*/ MTuner: PluginBlock
 var cycle_1, cycle_2, cycle_3, cycle_4: widget
 var cycle_array: widget array = [cycle_1, cycle_2, cycle_3, cycle_4]
 var root_4_label, cycle_4_label: widget
