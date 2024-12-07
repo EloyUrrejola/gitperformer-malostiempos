@@ -37,7 +37,7 @@ var send_setlist: widget
 
 //var /*guitar_delay_button, *//*guitar_amp_button,*/ guitar_reverb_button, guitar_delay_time, guitar_delay_feedback: widget*/
 var /*guitar_delay_mix,*/ guitar_amp_preset, guitar_reverb_button, guitar_reverb_amount, guitar_reverb_length/*, guitar_midi_button*/: widget
-var guitar_volume, guitar_background/*, guitar_wah_button, guitar_wah_depth*/: widget
+var guitar_volume/*, guitar_background, guitar_wah_button, guitar_wah_depth*/: widget
 var guitar_with_midi: widget
 
 var foot_pedal, foot_pedal_switch, foot_pedal_filter: widget
