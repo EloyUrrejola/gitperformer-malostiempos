@@ -59,7 +59,7 @@ var midi_channel, midi_volume, midi_alt_bass: widget
 
 var midi_mixer_volume: widget
 
-var out_mode, out_midi_L, out_midi_R, out_bass_L, out_bass_R: widget
+//var out_mode, out_midi_L, out_midi_R, out_bass_L, out_bass_R: widget
 
 var knob_audio_track, knob_audio_volume, slider_audio_position, button_audio_switch: widget
 var audio_array: widget array = [knob_audio_track, knob_audio_volume, slider_audio_position]
@@ -1204,7 +1204,7 @@ on WidgetValueChanged (w: Widget, index: Integer, newValue: Double) from guitar_
     end
 end
 
-on WidgetValueChanged (newValue: double) from out_mode
+/*on WidgetValueChanged (newValue: double) from out_mode
     if newValue == 1 then
         switchButtonOn(out_midi_L)
         switchButtonOn(out_midi_R)
@@ -1216,7 +1216,7 @@ on WidgetValueChanged (newValue: double) from out_mode
         switchButtonOff(out_bass_L)
         switchButtonOn(out_bass_R)
     end
-end
+end*/
 
 on TimerTick(ms : double)
     var x: integer
